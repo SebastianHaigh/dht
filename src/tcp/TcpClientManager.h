@@ -9,10 +9,10 @@
 #include <unordered_map>
 #include <vector>
 
-class TcpClient
+class TcpClientRecord
 {
   public:
-    TcpClient(int fd, sockaddr_in socketAddress, socklen_t addressLength);
+    TcpClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength);
 
     const std::string socketName();
     const std::string& socketName() const;
@@ -26,7 +26,7 @@ class TcpClient
 class TcpClientManager
 {
   public:
-    void processNewClient(std::unique_ptr<TcpClient> client);
+    void processNewClient(std::unique_ptr<TcpClientRecord> client);
 
     void processClientDisconnecion(int clientFD);
 
@@ -39,7 +39,7 @@ class TcpClientManager
   private:
     std::mutex m_mutex;
     std::condition_variable m_conditionVariable;
-    std::unordered_map<int, std::unique_ptr<TcpClient>> m_clients;
+    std::unordered_map<int, std::unique_ptr<TcpClientRecord>> m_clients;
 };
 
 #endif // TCP_CLIENT_MANAGER_H_

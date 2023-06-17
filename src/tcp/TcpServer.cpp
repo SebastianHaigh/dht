@@ -1,27 +1,64 @@
 #include "TcpServer.h"
 #include <cstring>
 #include <iostream>
+#include <unistd.h>
+
+
+LittleTestTcpServer::LittleTestTcpServer(std::string ipAddress, uint16_t portNumber)
+  : m_tcpClientAcceptor{ipAddress, portNumber, nullptr}
+{
+}
 
 TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
-  : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager}
+  : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
+    m_running(false)
 {
 }
 
 TcpServer::~TcpServer()
 {
+  std::cout << "TcpServer::~TcpServer started" << std::endl;
   stop();
 }
 
 void TcpServer::start()
 {
+  std::cout << "TcpServer::start started" << std::endl;
+  try
+  {
+  m_running = true;
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "TcpServer::start exception in setting m_running: " << e.what() << std::endl;
+  }
+  try
+  {
   m_thread = std::thread(&TcpServer::threadFunction, this);
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "TcpServer::start exception in creating thread: " << e.what() << std::endl;
+  }
+  try
+  {
   m_tcpClientAcceptor.start();
+  }
+  catch (const std::exception& e)
+  {
+    std::cout << "TcpServer::start exception: " << e.what() << std::endl;
+  }
 }
 
 void TcpServer::stop()
 {
-  m_thread.join();
-  m_tcpClientAcceptor.stop();
+  std::cout << "TcpServer::stop started" << std::endl;
+  if (m_running)
+  {
+    m_running = false;
+    m_thread.join();
+    m_tcpClientAcceptor.stop();
+  }
 }
 
 void TcpServer::subscribeToAll(std::function<void(int, std::string)> callback)
@@ -54,8 +91,9 @@ void TcpServer::threadFunction()
 {
   fd_set master;
 
-  while (true)
+  while (m_running)
   {
+    std::cout << "TcpServer::threadFunction running" << std::endl;
     FD_ZERO(&master);
 
     auto allClientFds = m_tcpClientManager.getAllClientFds();
@@ -101,6 +139,8 @@ void TcpServer::threadFunction()
 
     }
   }
+
+  std::cout << "Server Terminated by call to stop()" << std::endl;
 
 }
 

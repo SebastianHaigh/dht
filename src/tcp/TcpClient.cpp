@@ -1,59 +1,82 @@
 #include "TcpClient.h"
 
+#include <cstdint>
+#include <iostream>
+
 #include <arpa/inet.h>
 #include <unistd.h>
-
 
 namespace tcp {
 
 TcpClient::TcpClient(const IpAddressString& ipAddress, const PortNumber& port)
-  : m_socket(-1), 
-    m_ip(inet_addr(ipAddress.c_str())), 
-    m_port(port),
-    m_onReceiveCallback(nullptr)
+  : m_fd(-1), 
+    m_onReceiveCallback(nullptr),
+    m_running(false)
 {
+  std::cout << "creating socket address" << std::endl;
+  m_socketAddress.sin_family = AF_INET;
+  m_socketAddress.sin_port = htons(port);
+  inet_pton(AF_INET, ipAddress.c_str(), &m_socketAddress.sin_addr);
+
+  m_socketAddressLength = sizeof(m_socketAddress);
 }
 
 TcpClient::~TcpClient()
 {
-  disconnect();
-  m_receiveThread.join();
+  stop();
+}
+
+void TcpClient::start()
+{
+  m_running = true;
+  connectToServer();
+  m_receiveThread = std::thread{&TcpClient::receiveThreadFunction, this};
+}
+
+void TcpClient::stop()
+{
+  if (m_running)
+  {
+    m_running = false;
+    m_receiveThread.join();
+    disconnect();
+  }
 }
 
 void TcpClient::connectToServer()
 {
-  m_socket = socket(AF_INET, SOCK_STREAM, 0);
-  if (m_socket < 0)
+  m_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (m_fd < 0)
   {
+    std::cout << "Error creating socket" << std::endl;
   }
 
-  sockaddr_in serverAddress;
-  serverAddress.sin_family = AF_INET;
-  serverAddress.sin_addr.s_addr = m_ip;
-  serverAddress.sin_port = htons(m_port);
-
-  if (connect(m_socket, (sockaddr*)&serverAddress, sizeof(serverAddress)) < 0)
+  while (connect(m_fd, (struct sockaddr*) &m_socketAddress, m_socketAddressLength) < 0)
   {
+    std::cout << "Error connecting to server" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 
 void TcpClient::disconnect()
 {
-  if (m_socket >= 0)
+  if (m_fd >= 0)
   {
-    close(m_socket);
-    m_socket = -1;
+    close(m_fd);
+    m_fd = -1;
   }
 }
 
-void TcpClient::send(const char* data, int size)
+void TcpClient::send(const uint8_t* data, int size)
 {
-  if (m_socket < 0)
+  if (!m_running || m_fd < 0)
   {
+    return;
   }
 
-  if (::send(m_socket, data, size, 0) < 0)
+  if (::send(m_fd, data, size, 0) < 0)
   {
+    std::cout << "Error sending data" << std::endl;
   }
 }
 
@@ -64,15 +87,29 @@ void TcpClient::setOnReceiveCallback(onReceiveCallback callback)
 
 void TcpClient::receiveThreadFunction()
 {
-  while (true)
+  fd_set toReadFdSet;
+
+  while (m_running)
   {
-    char buffer[1024];
-    int receivedBytes = recv(m_socket, buffer, sizeof(buffer), 0);
-    if (receivedBytes < 0)
+    std::cout << "receiving" << std::endl;
+    FD_ZERO(&toReadFdSet);
+    FD_SET(m_fd, &toReadFdSet);
+
+    timeval timeout;
+    timeout.tv_sec = 1;
+    
+    int socketCount = select(m_fd + 1, &toReadFdSet, nullptr, nullptr, &timeout);
+
+    if (socketCount <= 0 || !FD_ISSET(m_fd, &toReadFdSet))
     {
-      
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      continue;
     }
-    else if (receivedBytes == 0)
+
+    char buffer[1024];
+    
+    int receivedBytes = recv(m_fd, buffer, sizeof(buffer), 0);
+    if (receivedBytes <= 0)
     {
       // If this happens, the server has closed the connection. 
       // We should handle this case.
@@ -86,6 +123,8 @@ void TcpClient::receiveThreadFunction()
       }
     }
   }
+
+  std::cout << "receive thread exiting" << std::endl;
 }
 
 } // namespace tcp

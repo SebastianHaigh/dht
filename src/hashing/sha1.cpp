@@ -3,6 +3,8 @@
 #include <cstdio>
 #include <iostream>
 
+namespace hashing {
+
 void sha1(const uint8_t *message, uint32_t messageLength, uint8_t *digest)
 {
   uint8_t* paddedMessage_p = padMessage(message, messageLength);
@@ -151,3 +153,16 @@ void sha1(const uint8_t *message, uint32_t messageLength, uint8_t *digest)
   delete[] paddedMessage_p;
 }
 
+void fromString(const char* hexDigest, uint8_t* digest)
+{
+  for (int i = 0; i < 20; i++)
+  {
+    char hexByte[3];
+    hexByte[0] = hexDigest[i * 2];
+    hexByte[1] = hexDigest[i * 2 + 1];
+    hexByte[2] = '\0';
+    digest[i] = strtol(hexByte, nullptr, 16);
+  }
+}
+
+} // namespace hashing

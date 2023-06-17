@@ -2,6 +2,9 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <memory>
+#include <unistd.h>
+#include <fcntl.h>
+
 
 #include "TcpAcceptor.h"
 #include "TcpClientManager.h"
@@ -10,7 +13,8 @@ TcpClientAcceptor::TcpClientAcceptor(std::string ipAddress,
                                      uint16_t portNumber,
                                      TcpClientManager* clientManager)
   : m_fd(socket(AF_INET, SOCK_STREAM, 0)),
-    m_clientManager(clientManager)
+    m_clientManager(clientManager),
+    m_running(false)
 {
   m_address.sin_family = AF_INET;
   m_address.sin_port = htons(portNumber);
@@ -19,11 +23,18 @@ TcpClientAcceptor::TcpClientAcceptor(std::string ipAddress,
 
 TcpClientAcceptor::~TcpClientAcceptor()
 {
-  m_clientAcceptorThread.join();
+  stop();
 }
 
 void TcpClientAcceptor::start()
 {
+  m_running = true;
+
+  if (not startListening())
+  {
+    return;
+  }
+
   m_clientAcceptorThread = std::thread{ &TcpClientAcceptor::clientAcceptorThreadFn, this };
 }
 
@@ -63,24 +74,58 @@ bool TcpClientAcceptor::startListening()
 
 void TcpClientAcceptor::stop()
 {
+  if (m_running)
+  {
+    m_running = false;
+    m_clientAcceptorThread.join();
+  }
 }
 
 void TcpClientAcceptor::clientAcceptorThreadFn()
 {
-  if (not startListening())
-  {
-    return;
-  }
+  fd_set listenSet;
 
-  while(true)
+  while(m_running)
   {
+    std::cout << "Waiting for client" << std::endl;
+    FD_ZERO(&listenSet);
+    FD_SET(m_fd, &listenSet);
+
     // Accept a call
     sockaddr_in client;
     socklen_t clientSize = sizeof(client);
 
+    timeval timeout; 
+    timeout.tv_sec = 1;
+
+    int socketCount = select(m_fd + 1, &listenSet, nullptr, nullptr, &timeout);
+
+    if (socketCount <= 0 || !FD_ISSET(m_fd, &listenSet))
+    {
+      continue;
+    }
+
     int clientFD = accept(m_fd, (struct sockaddr*) &client, &clientSize);
 
-    m_clientManager->processNewClient(std::make_unique<TcpClient>(clientFD, client, clientSize));
+    if (clientFD == -1)
+    {
+      // TODO (haigh) This is a hack to get around the fact that accept() is blocking
+      // and we want to be able to stop the thread.  We should probably use select()
+      // or something similar to make this non-blocking.
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+      {
+        continue;
+      }
+      else
+      {
+        std::cerr << "Could not accept client" << std::endl;
+        return;
+      }
+    }
+
+    m_clientManager->processNewClient(std::make_unique<TcpClientRecord>(clientFD, client, clientSize));
   }
+
+  std::cout << "TcpClientAcceptor thread exiting" << std::endl;
 }
 

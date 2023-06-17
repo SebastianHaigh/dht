@@ -4,6 +4,7 @@
 #include "TcpAcceptor.h"
 #include "TcpClientManager.h"
 #include <functional>
+#include <atomic>
 
 class TcpServer_I 
 {
@@ -21,7 +22,7 @@ class TcpServer : public TcpServer_I
 {
   public:
     TcpServer(std::string ipAddress, uint16_t portNumber);
-    ~TcpServer();
+    ~TcpServer() override;
 
     void start() override;
     void stop() override;
@@ -37,6 +38,18 @@ class TcpServer : public TcpServer_I
     TcpClientAcceptor m_tcpClientAcceptor;
     std::vector<std::function<void(int, std::string)>> m_subscribers;
     std::thread m_thread;
+    std::atomic<bool> m_running;
+};
+
+class LittleTestTcpServer
+{
+  public:
+    LittleTestTcpServer(std::string ipAddress, uint16_t portNumber);
+
+  private:
+    TcpClientManager m_tcpClientManager;
+    TcpClientAcceptor m_tcpClientAcceptor;
+
 };
 
 

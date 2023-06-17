@@ -142,6 +142,12 @@ class ThreadPool
       return result;
     }
 
+    template<typename FunctionType>
+    void postWithoutResult(FunctionType fn)
+    {
+      m_workQueue.push(std::move(fn));
+    }
+
   private:
     std::atomic_bool m_done;
     ThreadSafeQueue<FunctionWrapper> m_workQueue;

@@ -6,6 +6,36 @@
 
 #include "../sha1.h"
 
+namespace hashing { namespace test {
+
+TEST_CASE("String")
+{
+  std::string sha1 = "a9993e364706816aba3e25717850c26c9cd0d89d";
+  uint8_t hash[20];
+  fromString(sha1.c_str(), hash);
+
+  REQUIRE(hash[0] == 0xa9);
+  REQUIRE(hash[1] == 0x99);
+  REQUIRE(hash[2] == 0x3e);
+  REQUIRE(hash[3] == 0x36);
+  REQUIRE(hash[4] == 0x47);
+  REQUIRE(hash[5] == 0x06);
+  REQUIRE(hash[6] == 0x81);
+  REQUIRE(hash[7] == 0x6a);
+  REQUIRE(hash[8] == 0xba);
+  REQUIRE(hash[9] == 0x3e);
+  REQUIRE(hash[10] == 0x25);
+  REQUIRE(hash[11] == 0x71);
+  REQUIRE(hash[12] == 0x78);
+  REQUIRE(hash[13] == 0x50);
+  REQUIRE(hash[14] == 0xc2);
+  REQUIRE(hash[15] == 0x6c);
+  REQUIRE(hash[16] == 0x9c);
+  REQUIRE(hash[17] == 0xd0);
+  REQUIRE(hash[18] == 0xd8);
+  REQUIRE(hash[19] == 0x9d);
+}
+
 TEST_CASE("Padding length can be correctly calculated")
 {
   // Create a message of ten bytes this 80 bits
@@ -77,4 +107,4 @@ TEST_CASE("Hash a sentence")
   }
 }
 
-
+}} // namespace hashing::test

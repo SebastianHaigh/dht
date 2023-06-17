@@ -8,4 +8,5 @@ find_package(Catch2 3 REQUIRED)
 
 add_subdirectory(src)
 
+include(CTest)
 enable_testing()

@@ -3,9 +3,11 @@
 
 #include <cstdint>
 #include <cstring>
-#include <limits.h>
+#include <climits>
 #include <iostream>
 #include <sys/types.h>
+
+namespace hashing {
 
 static constexpr uint32_t H0 = 0x67452301;
 static constexpr uint32_t H1 = 0xEFCDAB89;
@@ -18,6 +20,8 @@ using SHA1Hash = uint8_t[20];
 void sha1(const uint8_t *message, uint32_t messageLength, uint8_t *digest);
 
 void sha1ToHex(const uint8_t* digest, char* hexDigest);
+
+void fromString(const char* hexDigest, uint8_t* digest);
 
 inline uint32_t numberOfPaddingBits(uint32_t messageLength)
 {
@@ -32,7 +36,7 @@ inline uint32_t numberOfPaddingBits(uint32_t messageLength)
 inline bool isLittleEndian()
 {
   uint32_t test = 1;
-  uint8_t* test_p = reinterpret_cast<uint8_t*>(&test);
+  auto* test_p = reinterpret_cast<uint8_t*>(&test);
 
   if (*test_p == 1) 
   {
@@ -157,4 +161,7 @@ inline void sha1Round(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D, uint32
   B = A;
   A = temp;
 }
+
+} // namespace hashing
+
 #endif // SHA1_H_

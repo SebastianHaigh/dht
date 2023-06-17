@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <string>
 #include <thread>
+#include <atomic>
 
 #include "TcpClientManager.h"
 
@@ -25,6 +26,7 @@ class TcpClientAcceptor
     sockaddr_in m_address;
     std::thread m_clientAcceptorThread;
     TcpClientManager* m_clientManager;
+    std::atomic<bool> m_running;
 };
  
 #endif // TCP_ACCEPTOR_H_

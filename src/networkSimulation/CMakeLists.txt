@@ -1,1 +1,3 @@
-add_library(NetworkSimulator STATIC NetworkSimulator.cpp)
+add_library(NetworkSimulation STATIC NetworkSimulation.cpp)
+
+add_subdirectory(tests)

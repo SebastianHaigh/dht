@@ -2,8 +2,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <iostream>
+#include <unistd.h>
 
-TcpClient::TcpClient(int fd, sockaddr_in socketAddress, socklen_t addressLength) 
+TcpClientRecord::TcpClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength) 
   : m_fd(fd), 
     m_socketAddress(socketAddress),
     m_socketAddressLength(addressLength)
@@ -13,17 +14,17 @@ TcpClient::TcpClient(int fd, sockaddr_in socketAddress, socklen_t addressLength)
   m_name = std::string{address} + ":" + std::to_string(ntohs(m_socketAddress.sin_port));
 }
 
-const std::string TcpClient::socketName()
+const std::string TcpClientRecord::socketName()
 {
   return m_name;
 }
 
-const std::string& TcpClient::socketName() const
+const std::string& TcpClientRecord::socketName() const
 {
   return m_name;
 }
 
-void TcpClientManager::processNewClient(std::unique_ptr<TcpClient> client) 
+void TcpClientManager::processNewClient(std::unique_ptr<TcpClientRecord> client) 
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 

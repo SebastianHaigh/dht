@@ -1,5 +1,6 @@
 #include "NodeId.h"
 
+#include <cstdint>
 #include <cstring>
 #include <sstream>
 
@@ -165,16 +166,38 @@ NodeId NodeId::operator+(const NodeId& other) const
 {
   NodeId result;
 
-  for (int i = 20; i > 0; i--)
+  uint16_t overflowBuffer{0};
+
+  for (int i = 19; i > 0; i--)
   {
     // first convert the two bytes to a 16 bit integer, this will overflow but that is ok because we will add the overflow to the next byte.
-    uint16_t sum = m_id[i] + other.m_id[i];
+    uint16_t sum = static_cast<uint16_t>(m_id[i]) + static_cast<uint16_t>(other.m_id[i]) + overflowBuffer;
 
     // mask off the lower 8 bits and add them to the result.
-    result.m_id[i] = sum & 0xFF;
+    result.m_id[i] += static_cast<uint8_t>(sum & 0xFF);
 
     // shift the upper 8 bits to the lower 8 bits and add them to the next byte.
-    result.m_id[i - 1] = sum >> 8;
+    // However we need to do this with the overflow buffer
+    //result.m_id[i - 1] += static_cast<uint8_t>(sum >> 8);
+    overflowBuffer = sum >> 8;
+  }
+
+  // deal with most significant octet
+  uint16_t sum = static_cast<uint16_t>(m_id[0]) + static_cast<uint16_t>(other.m_id[0]) + overflowBuffer;
+
+  result.m_id[0] = sum & 0xFF;
+  
+  if ((sum >> 8) == 0) return result;
+
+  overflowBuffer = sum >> 8;
+
+  for (int i = 19; i > 0; i--)
+  {
+    sum = result.m_id[i] + overflowBuffer;
+
+    overflowBuffer = sum >> 8;
+
+    if (overflowBuffer == 0) return result;
   }
 
   return result;

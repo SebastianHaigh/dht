@@ -132,9 +132,7 @@ NodeId& NodeId::operator=(const NodeId& other)
 
 bool NodeId::operator==(const NodeId& other) const
 {
-  std::cout << "NodeId::operator==()" << std::endl;
   bool result = memcmp(m_id, other.m_id, 20) == 0;
-  std::cout << "NodeId::operator==() - result = " << result << std::endl;
   return result;
 }
 
@@ -185,9 +183,15 @@ NodeId NodeId::operator+(const NodeId& other) const
 std::string NodeId::toString() const
 {
   std::stringstream ss;
-  for (int i = 0; i < 20; i++)
+  int counter{0};
+  
+  for (unsigned char i : m_id)
   {
-    ss << std::hex << static_cast<int>(m_id[i]);
+    // Each octet in the hash needs to be split into its upper and lower nybbles, 
+    // these need to be printed separately.
+    // If the whole byte is printed then 0x00 will be printed as just 0, not 00
+    ss << std::hex << (i >> 4); // Upper nybble
+    ss << std::hex << (i & 0xF); // Lower nybble
   }
   return ss.str();
 }

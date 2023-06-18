@@ -2,6 +2,7 @@
 #define NETWORKSIMULATOR_H_
 
 #include "../tcp/TcpServer.h"
+#include <cstdint>
 #include <unordered_map>
 
 // SimulatedNode The purpose of this class is to simulate a single node in a network.
@@ -10,23 +11,27 @@
 // by other nodes
 
 using OnSendCallback = std::function<void(uint32_t, uint32_t, int)>;
+using NodeReceiveHandler = std::function<void(int)>;
 
 class SimulatedNode {
   public:
     SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCallback);
+    SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCallback, NodeReceiveHandler receiveHandler);
     virtual ~SimulatedNode() = default;
     void run();
     int nodeId() const;
 
-    void receiveMessage(int source, int destination, int message);
+    void registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler);
+    void receiveMessage(uint32_t sourceIpAddress, int message);
 
     // The send message function needs to pass the message to the network, which can then find the recipient and pass them the message
-    void sendMessage(uint32_t sourceIpAddress, uint32_t destinationIpAddress, int message);
+    void sendMessage(uint32_t destinationIpAddress, int message) const;
 
   private:
     int m_nodeId;
     int m_ipAddress;
     OnSendCallback m_onSendCallback;
+    NodeReceiveHandler m_receiveHandler;
 };
 
 // SimulatedLink holds references to two nodes and manages the connection between them
@@ -52,7 +57,7 @@ class NetworkSimulator {
     NetworkSimulator();
     virtual ~NetworkSimulator() = default;
     void run();
-    const SimulatedNode& addNode(uint32_t ipAddress);
+    const SimulatedNode& addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler);
     void sendMessage(uint32_t sourceIpAddress, uint32_t destinationIpAddress, int message);
 
   private:

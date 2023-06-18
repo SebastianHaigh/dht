@@ -5,16 +5,11 @@ namespace chord {
 FingerTable::FingerTable(const NodeId& localNodeId)
   : m_localNodeId{localNodeId}
 {
-  std::cout << "FingerTable::FingerTable()" << std::endl;
   // Initialize the finger table entries
   for (int i = 0; i < 160; i++)
   {
-    std::cout << "FingerTable::FingerTable() - i = " << i << std::endl;
     m_entries[i].m_interval = calculateIthInterval(i);
   }
-
-  std::cout << "FingerTable::FingerTable() - done" << std::endl;
-  
 }
 
 const FingerTableEntry &FingerTable::operator[](size_t index) const

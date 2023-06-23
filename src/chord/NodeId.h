@@ -14,6 +14,7 @@ struct NodeId
 {
   NodeId();
   explicit NodeId(const uint8_t id[20]);
+  explicit NodeId(const uint32_t id[5]);
   explicit NodeId(const hashing::SHA1Hash& hash);
 
   NodeId(const NodeId& other);
@@ -35,6 +36,7 @@ struct NodeId
   static NodeId powerOfTwo(int power);
 
   hashing::SHA1Hash m_id;
+  uint32_t m_id2[5];
 };
 
 }

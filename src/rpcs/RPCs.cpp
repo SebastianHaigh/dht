@@ -1,6 +1,7 @@
 #include "RPCs.h"
 
-void start()
+
+void Node::start(const OpType& opType)
 {
 }
 

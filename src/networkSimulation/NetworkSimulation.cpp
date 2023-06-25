@@ -17,7 +17,15 @@ const SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHa
 {
   m_nodeIds.push_back(m_nextNodeId++);
 
-  auto onSendCallback = [this] (uint32_t source, uint32_t dest, int message) { sendMessage(source, dest, message); };
+  auto onSendCallback = [this] (uint32_t source,
+                                uint32_t dest,
+                                uint8_t* message,
+                                size_t messageLength) 
+                        { 
+                          sendMessage(source,
+                                      dest,
+                                      message, messageLength); 
+                        };
 
   auto node = std::make_unique<SimulatedNode>(m_nodeIds.back(),
                                               ipAddress,
@@ -31,6 +39,13 @@ const SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHa
 
   if (m_nodes.size() == 1) return *m_nodes.back();
 
+  // TODO (haigh) Is there any point in having links? I am not using them right now but it could be 
+  //   good in the future if I want to test breaking a like between specific nodes, or simulating
+  //   different latency between different nodes (eg. due to greater geographical distance etc)
+  
+  // TODO (haigh) Links can be held in an unordered map using a uint64_t as key. The ipAddress 
+  // of each node can be shifted and OR'd together to form a link ID
+  
   for (const auto& node : m_nodes)
   {
     if (node->nodeId() != m_nodeIds.back())
@@ -42,7 +57,10 @@ const SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHa
   return *m_nodes.back();
 }
 
-void NetworkSimulator::sendMessage(uint32_t sourceIpAddress, uint32_t destinationIpAddress, int message)
+void NetworkSimulator::sendMessage(uint32_t sourceIpAddress,
+                                   uint32_t destinationIpAddress,
+                                   uint8_t* message,
+                                   size_t messageLength)
 {
   // Go through each of the nodes that we have and find the destination Ip Address
   auto nodeIp_p = m_nodeIdLookup.find(destinationIpAddress);
@@ -53,7 +71,7 @@ void NetworkSimulator::sendMessage(uint32_t sourceIpAddress, uint32_t destinatio
   {
     if (node->nodeId() == nodeIp_p->second)
     {
-      node->receiveMessage(sourceIpAddress, message);
+      node->receiveMessage(sourceIpAddress, message, messageLength);
     }
   }
 }
@@ -100,14 +118,16 @@ void SimulatedNode::registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler
   m_receiveHandler = std::move(nodeReceiveHandler);
 }
 
-void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, int message)
+void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
 {
-  m_receiveHandler(message);
+  m_receiveHandler(message, messageLength);
 }
 
-void SimulatedNode::sendMessage(uint32_t destinationIpAddress, int message) const
+void SimulatedNode::sendMessage(uint32_t destinationIpAddress,
+                                uint8_t* message,
+                                size_t messageLength) const
 {
-  m_onSendCallback(m_ipAddress, destinationIpAddress, message);
+  m_onSendCallback(m_ipAddress, destinationIpAddress, message, messageLength);
 }
 
 int SimulatedNode::nodeId() const

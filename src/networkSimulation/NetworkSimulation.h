@@ -10,8 +10,8 @@
 // It also has a receive function that allows it toreceive messages that have been passed to it 
 // by other nodes
 
-using OnSendCallback = std::function<void(uint32_t, uint32_t, int)>;
-using NodeReceiveHandler = std::function<void(int)>;
+using OnSendCallback = std::function<void(uint32_t, uint32_t, uint8_t*, size_t)>;
+using NodeReceiveHandler = std::function<void(uint8_t*, size_t)>;
 
 class SimulatedNode {
   public:
@@ -22,10 +22,13 @@ class SimulatedNode {
     int nodeId() const;
 
     void registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler);
-    void receiveMessage(uint32_t sourceIpAddress, int message);
+
+    void receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength);
 
     // The send message function needs to pass the message to the network, which can then find the recipient and pass them the message
-    void sendMessage(uint32_t destinationIpAddress, int message) const;
+    void sendMessage(uint32_t destinationIpAddress, uint8_t* message, size_t messageLength) const;
+
+
 
   private:
     int m_nodeId;
@@ -56,9 +59,12 @@ class NetworkSimulator {
   public:
     NetworkSimulator();
     virtual ~NetworkSimulator() = default;
-    void run();
+    void run(); // TODO (haigh) is this method even needed?
     const SimulatedNode& addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler);
-    void sendMessage(uint32_t sourceIpAddress, uint32_t destinationIpAddress, int message);
+    void sendMessage(uint32_t sourceIpAddress,
+                     uint32_t destinationIpAddress,
+                     uint8_t* message,
+                     size_t messageLength);
 
   private:
     void removeAllLinksForNode(int nodeId); // I think this could be used as a call back in the node destructor

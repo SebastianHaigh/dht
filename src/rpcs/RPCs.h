@@ -6,10 +6,16 @@ enum class OpType
   BUILD_SPANNING_TREE,
 };
 
+struct NodeConfig
+{
+  int m_id;
+  uint32_t m_neighbourIpAddresses[5];
+};
+
 class Node
 {
   public:
-    Node(const SimulatedNode& node) : m_node(node) {};
+    Node(const SimulatedNode& node, NodeConfig config);
 
     void start(const OpType& opType);
 
@@ -19,7 +25,10 @@ class Node
     void position(int id, std::vector<int>& neighbours);
 
     const SimulatedNode& m_node;
+
     int m_id;
+    std::vector<uint32_t> m_neighbours;
+
     std::vector<int> m_nodesKnown;
     std::vector<std::pair<int, int>> m_channelsKnown;
 };

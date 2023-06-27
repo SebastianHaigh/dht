@@ -8,7 +8,7 @@ Node::Node(const SimulatedNode& node, NodeConfig config)
   {
     if (neighbourIpAddress == 0) return;
 
-    m_neighbours.push_back(neighbourIpAddress);
+    m_neighbourIps.push_back(neighbourIpAddress);
   }
 };
 

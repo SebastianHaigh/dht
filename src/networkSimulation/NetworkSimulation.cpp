@@ -13,18 +13,56 @@ void NetworkSimulator::run()
 {
 }
 
-const SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler)
+SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress)
 {
   m_nodeIds.push_back(m_nextNodeId++);
 
   auto onSendCallback = [this] (uint32_t source,
                                 uint32_t dest,
                                 uint8_t* message,
-                                size_t messageLength) 
-                        { 
+                                size_t messageLength)
+                        {
                           sendMessage(source,
                                       dest,
-                                      message, messageLength); 
+                                      message,
+                                      messageLength);
+                        };
+
+  auto node = std::make_unique<SimulatedNode>(m_nodeIds.back(),
+                                              ipAddress,
+                                              onSendCallback);
+
+  m_nodes.push_back(std::move(node));
+
+  m_nodeIdLookup.emplace(ipAddress, m_nodeIds.back());
+
+  if (m_nodes.size() == 1) return *m_nodes.back();
+
+  for (const auto& node : m_nodes)
+  {
+    if (node->nodeId() != m_nodeIds.back())
+    {
+      m_links.emplace_back(node.get(), m_nodes.back().get());
+    }
+  }
+
+  return *m_nodes.back();
+
+}
+
+SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler)
+{
+  m_nodeIds.push_back(m_nextNodeId++);
+
+  auto onSendCallback = [this] (uint32_t source,
+                                uint32_t dest,
+                                uint8_t* message,
+                                size_t messageLength)
+                        {
+                          sendMessage(source,
+                                      dest,
+                                      message,
+                                      messageLength);
                         };
 
   auto node = std::make_unique<SimulatedNode>(m_nodeIds.back(),
@@ -99,7 +137,7 @@ SimulatedNode::SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCal
 }
 
 SimulatedNode::SimulatedNode(int nodeId,
-                             int ipAddress, 
+                             int ipAddress,
                              OnSendCallback onSendCallback,
                              NodeReceiveHandler receiveHandler)
   : m_nodeId(nodeId),

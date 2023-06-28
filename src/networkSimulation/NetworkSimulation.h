@@ -60,7 +60,8 @@ class NetworkSimulator {
     NetworkSimulator();
     virtual ~NetworkSimulator() = default;
     void run(); // TODO (haigh) is this method even needed?
-    const SimulatedNode& addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler);
+    SimulatedNode& addNode(uint32_t ipAddress);
+    SimulatedNode& addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler);
     void sendMessage(uint32_t sourceIpAddress,
                      uint32_t destinationIpAddress,
                      uint8_t* message,

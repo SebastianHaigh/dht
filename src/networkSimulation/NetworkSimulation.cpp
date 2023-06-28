@@ -158,7 +158,7 @@ void SimulatedNode::registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler
 
 void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
 {
-  m_receiveHandler(message, messageLength);
+  m_receiveHandler(sourceIpAddress, message, messageLength);
 }
 
 void SimulatedNode::sendMessage(uint32_t destinationIpAddress,

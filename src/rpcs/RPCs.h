@@ -1,4 +1,5 @@
 #include "../networkSimulation/NetworkSimulation.h"
+#include "Messages.h"
 
 enum class OpType
 {
@@ -6,44 +7,10 @@ enum class OpType
   BUILD_SPANNING_TREE,
 };
 
-enum class MessageType : uint16_t
-{
-  POSITION,
-};
-
 struct NodeConfig
 {
   int m_id;
   uint32_t m_neighbourIpAddresses[5];
-};
-
-struct PositionMessage
-{
-  PositionMessage() : id(0), m_neighbours{0} {};
-
-  PositionMessage(int id, uint32_t* neighbours, size_t numNeighbours)
-    : id(id),
-      m_neighbours{0}
-  {
-    numNeighbours = (numNeighbours > 5) ? 5 : numNeighbours;
-
-    for (int i = 0; i < numNeighbours; i++)
-    {
-      m_neighbours[i] = neighbours[i];
-    }
-  }
-
-  PositionMessage(int id, std::vector<uint32_t> neighbours)
-    : id(id),
-      m_neighbours{0}
-  {
-    for (int i = 0; i < 5; i++)
-    {
-      m_neighbours[i] = neighbours[i];
-    }
-  }
-  int id;
-  uint32_t m_neighbours[5];
 };
 
 class Node

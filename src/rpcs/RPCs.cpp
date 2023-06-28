@@ -1,8 +1,9 @@
 #include "RPCs.h"
 
-Node::Node(const SimulatedNode& node, NodeConfig config)
+
+Node::Node(SimulatedNode& node, NodeConfig config)
   : m_node(node),
-  m_id(config.m_id)
+    m_id(config.m_id)
 {
   for (unsigned int neighbourIpAddress : config.m_neighbourIpAddresses)
   {

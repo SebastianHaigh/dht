@@ -16,7 +16,7 @@ struct NodeConfig
 class Node
 {
   public:
-    Node(const SimulatedNode& node, NodeConfig config);
+    Node(SimulatedNode& node, NodeConfig config);
 
     void start(const OpType& opType);
 

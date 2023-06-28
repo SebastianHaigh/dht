@@ -15,10 +15,10 @@ TEST_CASE("Network simulation first test")
   int receivedAtNode2{0};
   int receivedAtNode3{0};
 
-  auto receiveHandlerForNode0 = [&receivedAtNode0] (uint8_t* message, size_t messageLength) { receivedAtNode0 = static_cast<int>(messageLength); };
-  auto receiveHandlerForNode1 = [&receivedAtNode1] (uint8_t* message, size_t messageLength) { receivedAtNode1 = static_cast<int>(messageLength); };
-  auto receiveHandlerForNode2 = [&receivedAtNode2] (uint8_t* message, size_t messageLength) { receivedAtNode2 = static_cast<int>(messageLength); };
-  auto receiveHandlerForNode3 = [&receivedAtNode3] (uint8_t* message, size_t messageLength) { receivedAtNode3 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode0 = [&receivedAtNode0] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode0 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode1 = [&receivedAtNode1] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode1 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode2 = [&receivedAtNode2] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode2 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode3 = [&receivedAtNode3] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode3 = static_cast<int>(messageLength); };
   
   // Add two nodes to the network
   auto& node0 = simulator.addNode(0, receiveHandlerForNode0);

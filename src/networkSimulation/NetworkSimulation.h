@@ -11,7 +11,7 @@
 // by other nodes
 
 using OnSendCallback = std::function<void(uint32_t, uint32_t, uint8_t*, size_t)>;
-using NodeReceiveHandler = std::function<void(uint8_t*, size_t)>;
+using NodeReceiveHandler = std::function<void(uint32_t, uint8_t*, size_t)>;
 
 class SimulatedNode {
   public:
@@ -27,8 +27,6 @@ class SimulatedNode {
 
     // The send message function needs to pass the message to the network, which can then find the recipient and pass them the message
     void sendMessage(uint32_t destinationIpAddress, uint8_t* message, size_t messageLength) const;
-
-
 
   private:
     int m_nodeId;

@@ -47,73 +47,7 @@ enum class MessageType : uint32_t
 {
   JOIN              = 0x00000001,
   JOIN_RESPONSE     = 0x00000002,
-};
 
-inline std::size_t minimumMessageLength()
-{
-  return 28;
-}
-
-inline uint8_t* getMessageType_p(uint8_t* message)
-{
-  return message + 2;
-}
-
-inline uint8_t* getPayloadLength_p(uint8_t* message)
-{
-  return message + 6;
-}
-
-inline uint8_t* getPayload_p(uint8_t* message)
-{
-  return message + 2;
-}
-
-inline uint8_t* getChecksum_p(uint8_t* message, std::size_t payloadLength)
-{
-  return getPayload_p(message) + payloadLength;
-}
-
-bool isVersionSupported(uint8_t* message);
-
-inline MessageType getMessageType(uint8_t* message)
-{
-  auto* messageType_p = getMessageType_p(message);
-  auto* messageTypeUint32_p = reinterpret_cast<uint32_t*>(messageType_p);
-
-  return static_cast<MessageType>(*messageTypeUint32_p);
-}
-
-inline uint16_t getPayloadLength(uint8_t* message)
-{
-  auto* payloadLength_p = getPayloadLength_p(message);
-  auto* payloadLengthUint16_t = reinterpret_cast<uint16_t*>(payloadLength_p);
-
-  return *payloadLengthUint16_t;
-}
-
-inline std::size_t getMessageLengthWithoutChecksum(uint8_t* message)
-{
-  return 2 + 4 + 2 + getPayloadLength(message);
-}
-
-inline bool verifyChecksum(uint8_t* message)
-{
-  auto* checksum_p = getChecksum_p(message, getPayloadLength(message));
-
-  hashing::SHA1Hash messageHash;
-
-  hashing::sha1(message, getMessageLengthWithoutChecksum(message), messageHash);
-
-  for (uint8_t i : messageHash)
-  {
-    if (*checksum_p != i) return false;
-
-    checksum_p++;
-  }
-
-  return true;
-}
 
 class EncodedMessage
 {

@@ -63,7 +63,7 @@ Message::Message(CommsVersion version, MessageType type)
 
 EncodedMessage Message::createEncodedMessage()
 {
-  std::size_t messageLength = m_payloadLength + 28;
+  std::size_t messageLength = m_payloadLength + 8;
 
   EncodedMessage encoded{messageLength};
 
@@ -83,16 +83,6 @@ void Message::decodeHeaders(const EncodedMessage& encodedMessage)
   decodeSingleValue(msg_p, (uint16_t*) &m_version);
   decodeSingleValue(msg_p + sizeof(CommsVersion), (uint32_t*) &m_type);
   decodeSingleValue(msg_p + sizeof(CommsVersion) + sizeof(MessageType), (uint16_t*) &m_payloadLength);
-}
-
-// Should the checksum be part of this message or should it be in the wrapped packet that is generated for point to point cast
-void Message::generateChecksum(EncodedMessage& encodedMessage)
-{
-  std::size_t checksumStartIndex{encodedMessage.m_length - 20};
-
-  auto* checksum_p = &encodedMessage.m_message[checksumStartIndex];
-
-  hashing::sha1(encodedMessage.m_message, checksumStartIndex, checksum_p);
 }
 
 JoinMessage::JoinMessage(CommsVersion version)
@@ -118,8 +108,6 @@ EncodedMessage JoinMessage::encode()
   auto* payload_p = &encoded.m_message[2 + 4 + 2];
 
   encodeSingleValue(&m_ip, payload_p);
-
-  generateChecksum(encoded);
 
   return std::move(encoded);
 }

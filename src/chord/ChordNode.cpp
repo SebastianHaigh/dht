@@ -1,4 +1,5 @@
 #include "ChordNode.h"
+#include "ChordMessaging.h"
 
 #include <algorithm>
 #include <arpa/inet.h>
@@ -135,15 +136,11 @@ void ChordNode::sendFindSuccessorRequest(const NodeId &id)
 
   if (nodeConnection != m_nodeConnections.end())
   {
-    InterNodeRequest request{ InterNodeRequest::Type::FIND_SUCCESSOR_REQUEST,
-                              m_id, 
-                              id,
-                              m_ipAddress,
-                              m_port };
+    FindSuccessorMessage message{ CommsVersion::V1, id };
 
-    uint8_t requestBuffer[48];
-    request.toBuffer(requestBuffer, 48);
-    nodeConnection->m_tcpClient->send(requestBuffer, 48);
+    auto encoded = message.encode();
+
+    nodeConnection->m_tcpClient->send(encoded.m_message, encoded.m_length);
   }
 }
 
@@ -159,40 +156,25 @@ void ChordNode::sendFindPredecessorRequest(const NodeId &id)
 
   if (nodeConnection != m_nodeConnections.end())
   {
-    InterNodeRequest request{ InterNodeRequest::Type::FIND_PREDECESSOR_REQUEST,
-                              m_id, 
-                              id, 
-                              m_ipAddress,
-                              m_port };
+    FindSuccessorMessage message{ CommsVersion::V1, id };
 
-    uint8_t requestBuffer[48];
-    request.toBuffer(requestBuffer, 48);
-    nodeConnection->m_tcpClient->send(requestBuffer, 48);
+    auto encoded = message.encode();
+
+    nodeConnection->m_tcpClient->send(encoded.m_message, encoded.m_length);
   }
 }
 
-void ChordNode::processReceivedMessage(const InterNodeRequest& request)
+void ChordNode::processReceivedMessage(const Message& request)
 {
-  switch (request.m_type)
+  switch (request.type())
   {
-    case InterNodeRequest::Type::FIND_SUCCESSOR_REQUEST:
-    {
-      break;
-    }
-    case InterNodeRequest::Type::FIND_SUCCESSOR_RESPONSE:
-    {
-     break;
-    }
-    case InterNodeRequest::Type::FIND_PREDECESSOR_REQUEST:
-    {
-      break;
-    }
-    case InterNodeRequest::Type::FIND_PREDECESSOR_RESPONSE:
+    case MessageType::CHORD_FIND_SUCCESSOR:
     {
       break;
     }
     default:
     {
+      // Not a chord message
       break;
     }
   }

@@ -6,6 +6,7 @@
 #include <bit>
 
 #include "../ChordNode.h"
+#include "../ChordMessaging.h"
 #include "../NodeId.h"
 
 namespace chord { namespace test {
@@ -175,6 +176,23 @@ TEST_CASE("Test the creation of a chord node")
   
   REQUIRE(node.getSuccessorId() == node2.getPredecessorId());
   REQUIRE(node2.getPredecessorId() == node.getSuccessorId());
+}
+
+TEST_CASE("Chord messaging test")
+{
+  NodeId nodeId { "12345678-abcdabcd-effeeffe-dcbadcba-87654321" };
+
+  FindSuccessorMessage message{CommsVersion::V1, nodeId};
+
+  EncodedMessage encoded = message.encode();
+
+  FindSuccessorMessage decodedMessage{CommsVersion::V1};
+
+  decodedMessage.decode(encoded);
+
+  auto decodedNodeId = decodedMessage.nodeId();
+
+  REQUIRE(decodedNodeId == nodeId);
 }
 
 }} // namespace chord::test

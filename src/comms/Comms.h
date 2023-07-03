@@ -42,6 +42,8 @@ enum class MessageType : uint32_t
 {
   JOIN              = 0x00000001,
   JOIN_RESPONSE     = 0x00000002,
+
+  POSITION          = 0x00000101,
 };
 
 class EncodedMessage
@@ -96,6 +98,42 @@ class JoinMessage : public Message
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;
+
+  private:
+
+    uint32_t m_ip;
+};
+
+class JoinResponseMessage : public Message
+{
+  public:
+    explicit JoinResponseMessage(CommsVersion version);
+    JoinResponseMessage(CommsVersion version, uint32_t ip);
+    ~JoinResponseMessage() = default;
+
+    EncodedMessage encode() override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] uint32_t ip() const;
+
+  private:
+
+    uint32_t m_ip;
+};
+
+class PositionMessage : public Message
+{
+  public:
+    explicit PositionMessage(CommsVersion version);
+    PositionMessage(CommsVersion version, uint32_t ip);
+    ~PositionMessage() = default;
+
+    EncodedMessage encode() override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] uint32_t ip() const;
+    [[nodiscard]] std::size_t numNeighbours() const;
+    [[nodiscard]] uint32_t neighbour(std::size_t index) const;
 
   private:
 

@@ -46,6 +46,11 @@ inline bool isLittleEndian()
   return false;
 }
 
+inline uint16_t swapEndianU16(uint16_t value)
+{
+  return (value << 8) | (value >> 8);
+}
+
 inline uint32_t swapEndianU32(uint32_t value)
 {
   value = ((value << 8) & 0xFF00FF00) | ((value >> 8) & 0xFF00FF);

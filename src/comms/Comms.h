@@ -13,7 +13,6 @@
 // message-type
 // message-length
 // message-content
-// footer
 //
 // All messages are send big endian so this will have to be converted if the system is little endian
 //
@@ -21,18 +20,14 @@
 // Message-Type 4 bytes
 // payload-length 2 bytes
 // payload (payload-length bytes)
-// footer 20 bytes
 //
-// the footer is an sha1 hash that checks the consistancy of the message
-
 // The messaging protocol will work like this:
 //
 // Step 1: endian convert and read the messaging version, if unsupported drop
 // Step 2: endian convert and read the message type
-// Step 3: endian convert and read the payload-length
-// Step 4: use the payload length the work out the position of the footer and read
-// Step 5: verify the message and hash match
-// Step 6: create an object matching the message type and use this to decode the message
+// Step 3: create an object matching the message type and use this to decode the message
+// Step 4: endian convert and read the payload-length
+// Step 5: decode the payload
 
 #include <cstddef>
 #include <cstdint>
@@ -83,8 +78,6 @@ class Message
     EncodedMessage createEncodedMessage();
 
     void decodeHeaders(const EncodedMessage& encodedMessage);
-
-    void generateChecksum(EncodedMessage& encodedMessage);
 
   private:
     CommsVersion m_version;

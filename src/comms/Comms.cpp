@@ -125,3 +125,85 @@ void JoinMessage::decode(const EncodedMessage& message)
 {
   return m_ip;
 }
+
+JoinResponseMessage::JoinResponseMessage(CommsVersion version)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(0)
+{
+}
+
+JoinResponseMessage::JoinResponseMessage(CommsVersion version, uint32_t ip)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(ip)
+{
+}
+
+EncodedMessage JoinResponseMessage::encode()
+{
+  auto encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+
+  encodeSingleValue(&m_ip, payload_p);
+
+  return std::move(encoded);
+}
+
+void JoinResponseMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_ip);
+}
+
+[[nodiscard]] uint32_t JoinResponseMessage::ip() const
+{
+  return m_ip;
+}
+
+PositionMessage::PositionMessage(CommsVersion version)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(0)
+{
+}
+
+PositionMessage::PositionMessage(CommsVersion version, uint32_t ip)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(ip)
+{
+}
+
+EncodedMessage PositionMessage::encode()
+{
+  auto encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+
+  encodeSingleValue(&m_ip, payload_p);
+
+  return std::move(encoded);
+}
+
+void PositionMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_ip);
+}
+
+[[nodiscard]] uint32_t PositionMessage::ip() const
+{
+  return m_ip;
+}

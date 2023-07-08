@@ -148,6 +148,7 @@ struct NodeId
   explicit NodeId(const uint8_t id[20]);
   explicit NodeId(const hashing::SHA1Hash& hash);
   explicit NodeId(const std::string& hash);
+  explicit NodeId(uint32_t ipAddress);
 
   NodeId(const NodeId& other);
   NodeId& operator=(const NodeId& other);

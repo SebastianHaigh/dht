@@ -84,6 +84,27 @@ NodeId::NodeId(const std::string& hash)
   }
 }
 
+NodeId::NodeId(uint32_t ipAddress)
+  : m_id{0}
+{
+
+  hashing::SHA1Hash digest;
+  hashing::sha1((uint8_t*) &ipAddress, 4, digest);
+
+  if (std::endian::native == std::endian::big)
+  {
+    memcpy(m_id, digest, 20);
+    return;
+  }
+
+  auto* digest_p = &digest[19];
+
+  for (uint8_t& i : m_id)
+  {
+    i = *digest_p--;
+  }
+}
+
 NodeId::NodeId(const NodeId& other)
   : m_id{0}
 {

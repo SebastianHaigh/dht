@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include "../NetworkSimulation.h"
@@ -14,22 +15,22 @@ TEST_CASE("Network simulation first test")
   int receivedAtNode2{0};
   int receivedAtNode3{0};
 
-  auto receiveHandlerForNode0 = [&receivedAtNode0] (int message) { receivedAtNode0 = message; };
-  auto receiveHandlerForNode1 = [&receivedAtNode1] (int message) { receivedAtNode1 = message; };
-  auto receiveHandlerForNode2 = [&receivedAtNode2] (int message) { receivedAtNode2 = message; };
-  auto receiveHandlerForNode3 = [&receivedAtNode3] (int message) { receivedAtNode3 = message; };
+  auto receiveHandlerForNode0 = [&receivedAtNode0] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode0 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode1 = [&receivedAtNode1] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode1 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode2 = [&receivedAtNode2] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode2 = static_cast<int>(messageLength); };
+  auto receiveHandlerForNode3 = [&receivedAtNode3] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode3 = static_cast<int>(messageLength); };
   
   // Add two nodes to the network
   auto& node0 = simulator.addNode(0, receiveHandlerForNode0);
   auto& node1 = simulator.addNode(1, receiveHandlerForNode1);
 
   // Send a message from node a and check it is received on node b
-  node0.sendMessage(1, 1);
+  node0.sendMessage(1, nullptr, 1);
   
   CHECK(receivedAtNode1 == 1);
 
   // Send a message from node b and check it is received on node a
-  node1.sendMessage(0, 2);
+  node1.sendMessage(0, nullptr, 2);
 
   CHECK(receivedAtNode0 == 2);
 
@@ -38,7 +39,7 @@ TEST_CASE("Network simulation first test")
 
   for (int i = 0; i < 4; i++)
   {
-    node2.sendMessage(i, i);
+    node2.sendMessage(i, nullptr, i);
   }
 
   CHECK(receivedAtNode0 == 0);

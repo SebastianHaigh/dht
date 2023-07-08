@@ -60,7 +60,7 @@ void TcpServer::stop()
   }
 }
 
-void TcpServer::subscribeToAll(std::function<void(int, std::string)> callback)
+void TcpServer::subscribeToAll(OnReceiveCallback callback)
 {
   m_subscribers.push_back(callback);
 }
@@ -131,7 +131,9 @@ void TcpServer::threadFunction()
         {
           for (const auto& subscriber : m_subscribers)
           {
-            subscriber(client, std::string{messageBuffer, bytesIn});
+            auto* messageData = new uint8_t[bytesIn];
+            memcpy(messageData, messageBuffer, bytesIn);
+            subscriber(messageData, bytesIn);
           }
         }
       }

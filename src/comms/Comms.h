@@ -73,11 +73,11 @@ class Message
     [[nodiscard]] const CommsVersion& version() const;
     [[nodiscard]] std::size_t payloadLength() const;
 
-    virtual EncodedMessage encode() = 0;
+    [[nodiscard]] virtual EncodedMessage encode() const = 0;
     virtual void decode(const EncodedMessage& message) = 0;
   
   protected:
-    EncodedMessage createEncodedMessage();
+    [[nodiscard]] EncodedMessage createEncodedMessage() const;
 
     void decodeHeaders(const EncodedMessage& encodedMessage);
 
@@ -94,7 +94,7 @@ class JoinMessage : public Message
     JoinMessage(CommsVersion version, uint32_t ip);
     ~JoinMessage() = default;
 
-    EncodedMessage encode() override;
+    [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;
@@ -111,7 +111,7 @@ class JoinResponseMessage : public Message
     JoinResponseMessage(CommsVersion version, uint32_t ip);
     ~JoinResponseMessage() = default;
 
-    EncodedMessage encode() override;
+    [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;
@@ -128,7 +128,7 @@ class PositionMessage : public Message
     PositionMessage(CommsVersion version, uint32_t ip);
     ~PositionMessage() = default;
 
-    EncodedMessage encode() override;
+    [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;

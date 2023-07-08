@@ -1,13 +1,6 @@
 #include "TcpServer.h"
 #include <cstring>
 #include <iostream>
-#include <unistd.h>
-
-
-LittleTestTcpServer::LittleTestTcpServer(std::string ipAddress, uint16_t portNumber)
-  : m_tcpClientAcceptor{ipAddress, portNumber, nullptr}
-{
-}
 
 TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
   : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},

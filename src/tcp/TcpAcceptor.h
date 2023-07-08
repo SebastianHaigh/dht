@@ -2,8 +2,7 @@
 #define TCP_ACCEPTOR_H_
 
 #include <cstdint>
-#include <netinet/in.h>
-#include <string>
+#include <netinet/in.h> // sockaddr_in
 #include <thread>
 #include <atomic>
 

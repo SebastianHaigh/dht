@@ -42,17 +42,5 @@ class TcpServer : public TcpServer_I
     std::atomic<bool> m_running;
 };
 
-class LittleTestTcpServer
-{
-  public:
-    LittleTestTcpServer(std::string ipAddress, uint16_t portNumber);
-
-  private:
-    TcpClientManager m_tcpClientManager;
-    TcpClientAcceptor m_tcpClientAcceptor;
-
-};
-
-
 #endif // TCP_SERVER_H_
 

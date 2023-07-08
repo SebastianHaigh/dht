@@ -13,7 +13,7 @@ using OnReceiveCallback = std::function<void(uint8_t*, std::size_t)>;
 class TcpServer_I 
 {
   public:
-    virtual ~TcpServer_I() {}
+    virtual ~TcpServer_I() = default;
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual void subscribeToAll(OnReceiveCallback callback) = 0;

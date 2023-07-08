@@ -15,6 +15,12 @@ TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
 {
 }
 
+TcpServer::TcpServer(uint32_t ipAddress, uint16_t portNumber)
+  : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
+    m_running(false)
+{
+}
+
 TcpServer::~TcpServer()
 {
   std::cout << "TcpServer::~TcpServer started" << std::endl;

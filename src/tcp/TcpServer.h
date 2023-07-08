@@ -22,6 +22,7 @@ class TcpServer : public TcpServer_I
 {
   public:
     TcpServer(std::string ipAddress, uint16_t portNumber);
+    TcpServer(uint32_t ipAddress, uint16_t portNumber);
     ~TcpServer() override;
 
     void start() override;

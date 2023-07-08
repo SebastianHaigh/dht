@@ -38,6 +38,7 @@ class TcpClient : public TcpClient_I
   public:
     TcpClient() = default;
     TcpClient(const IpAddressString& ipAddress, const PortNumber& port);
+    TcpClient(const IpAddressV4& ipAddress, const PortNumber& port);
     ~TcpClient();
 
     void start() override;
@@ -54,7 +55,7 @@ class TcpClient : public TcpClient_I
     int m_fd;
     sockaddr_in m_socketAddress;
     socklen_t m_socketAddressLength;
-    
+
     onReceiveCallback m_onReceiveCallback;
     std::thread m_receiveThread;
     std::atomic<bool> m_running;

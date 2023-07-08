@@ -13,6 +13,7 @@ class TcpClientAcceptor
 {
   public:
     TcpClientAcceptor(std::string ipAddress, uint16_t portNumber, TcpClientManager* clientManager);
+    TcpClientAcceptor(uint32_t ipAddress, uint16_t portNumber, TcpClientManager* clientManager);
     ~TcpClientAcceptor();   
 
     void start();

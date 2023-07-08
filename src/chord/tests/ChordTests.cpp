@@ -36,35 +36,6 @@ class Timer {
     }
 };
 
-TEST_CASE("Check the speed of the addition")
-{
-
-  if (std::endian::native == std::endian::little)
-  std::cout << "little endian" << std::endl;
-  else
-    std::cout << "not little" << std::endl;
-
-  uint32_t hashvals[5] = { 0xFFFFFFFF, 
-                           0xFFFFFFFF, 
-                           0xFFFFFFFF,
-                           0xFFFFFFFF, 
-                           0xFFFFFFFF };
-  NodeId largeNodeId{ hashvals };
-  NodeId anotherNodeId{ hashing::SHA1Hash{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF } };
-  {
-    Timer timer;
-    for (int i = 0; i < 220000; i++)
-    {
-      auto node = largeNodeId + anotherNodeId;
-    }
-  }
-
-  REQUIRE(false);
-}
-
 TEST_CASE("Test the creation of a node id")
 {
   NodeId twoToTheZero = NodeId::powerOfTwo(0);
@@ -77,16 +48,6 @@ TEST_CASE("Test the creation of a node id")
   NodeId twoToTheSeven = NodeId::powerOfTwo(7);
   NodeId twoToTheEight = NodeId::powerOfTwo(8);
 
-  std::vector<NodeId> nodeIds = { NodeId::powerOfTwo(0),
-                                  NodeId::powerOfTwo(1),
-                                  NodeId::powerOfTwo(2),
-                                  NodeId::powerOfTwo(3),
-                                  NodeId::powerOfTwo(4),
-                                  NodeId::powerOfTwo(5),
-                                  NodeId::powerOfTwo(6),
-                                  NodeId::powerOfTwo(7),
-                                  NodeId::powerOfTwo(8) };
-
   hashing::SHA1Hash twoToTheZeroHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1 };
   hashing::SHA1Hash twoToTheOneHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x2 };
   hashing::SHA1Hash twoToTheTwoHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x4 };
@@ -96,24 +57,6 @@ TEST_CASE("Test the creation of a node id")
   hashing::SHA1Hash twoToTheSixHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x40 };
   hashing::SHA1Hash twoToTheSevenHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80 };
   hashing::SHA1Hash twoToTheEightHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1, 0 };
-
-  std::vector<unsigned char*> hashes{ &twoToTheZeroHash[0], 
-                                        &twoToTheOneHash[0], 
-                                         &twoToTheTwoHash[0],
-                                         &twoToTheThreeHash[0],
-                                         &twoToTheFourHash[0],
-                                         &twoToTheFiveHash[0],
-                                         &twoToTheSixHash[0],
-                                         &twoToTheSevenHash[0],
-                                         &twoToTheEightHash[0] };
-
-  int counter{ 0 };
-  for (auto& hash : hashes)
-  {
-    std::cout << std::dec << counter << ": " << nodeIds[counter].toString() << ", hash version " << NodeId{hash}.toString() << std::endl;
-    counter++;
-  } 
-
 
   REQUIRE(twoToTheZero == NodeId{twoToTheZeroHash});
   REQUIRE(twoToTheOne == NodeId{twoToTheOneHash});
@@ -125,52 +68,39 @@ TEST_CASE("Test the creation of a node id")
   REQUIRE(twoToTheSeven == NodeId(twoToTheSevenHash));
   REQUIRE(twoToTheEight == NodeId(twoToTheEightHash));
 
-  // Large number addition
-  hashing::SHA1Hash largeHashValue = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+}
 
-  
-  NodeId largeNodeId{ hashing::SHA1Hash{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF } };
-  NodeId anotherNodeId{ hashing::SHA1Hash{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF } };
+TEST_CASE("Add some more node ids")
+{
+  NodeId nodeId_0, nodeId_1, expected;
 
-  uint16_t toBeAddedTo = 0xFFFF;
-  uint16_t toAdd = 0xFFFF;
-  uint16_t theSum = toBeAddedTo + toAdd;
-
-  std::cout << std::hex << toBeAddedTo << " + " << std::dec << toAdd << " = " << std::hex << theSum << std::endl;
-
-  for (int i = 0; i < 5000; i++)
+  SECTION("Case 1")
   {
-    std::cout << largeNodeId.toString() << std::endl;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds{500});
-    largeNodeId = largeNodeId + anotherNodeId;
+    nodeId_0 = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+    nodeId_1 = NodeId{ "00000000-00000100-00000000-00000000-00000000" };
+    expected = NodeId{ "00000000-000000FF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
   }
 
-  
-  
-  
+  SECTION("Case 2")
+  {
+    nodeId_0 = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+    nodeId_1 = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+    expected = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFE" };
+  }
+
+  auto result = nodeId_0 + nodeId_1;
+
+  REQUIRE(result == expected);
 }
 
 TEST_CASE("Test the creation of a chord node")
 {
-  std::cout << "Create first node" << std::endl;
   ChordNode node{"200.178.0.1", 0};
   
   // Create another node and join the network that is currently formed by the first node
   
-  std::cout << "Create second node" << std::endl;
   ChordNode node2{"200.178.0.5", 0};
 
-  std::cout << "Join second node to first node" << std::endl;
   node2.join("200.178.0.1");
   
   REQUIRE(node.getSuccessorId() == node2.getPredecessorId());

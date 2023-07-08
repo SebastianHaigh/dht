@@ -6,6 +6,8 @@
 #include <functional>
 #include <atomic>
 
+namespace tcp {
+
 using OnReceiveCallback = std::function<void(uint8_t*, std::size_t)>;
 
 class TcpServer_I 
@@ -43,6 +45,8 @@ class TcpServer : public TcpServer_I
     std::thread m_thread;
     std::atomic<bool> m_running;
 };
+
+} // namespace tcp
 
 #endif // TCP_SERVER_H_
 

@@ -2,6 +2,8 @@
 #include <cstring>
 #include <iostream>
 
+namespace tcp {
+
 TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
   : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
     m_running(false)
@@ -145,4 +147,5 @@ void TcpServer::threadFunction()
 
 }
 
+} // namespace tcp
 

@@ -21,6 +21,18 @@ TcpClientAcceptor::TcpClientAcceptor(std::string ipAddress,
   inet_pton(AF_INET, ipAddress.c_str(), &m_address.sin_addr);
 }
 
+TcpClientAcceptor::TcpClientAcceptor(uint32_t ipAddress,
+                                     uint16_t portNumber,
+                                     TcpClientManager* clientManager)
+  : m_fd(socket(AF_INET, SOCK_STREAM, 0)),
+    m_clientManager(clientManager),
+    m_running(false)
+{
+  m_address.sin_family = AF_INET;
+  m_address.sin_port = htons(portNumber);
+  m_address.sin_addr.s_addr = htonl(ipAddress);
+}
+
 TcpClientAcceptor::~TcpClientAcceptor()
 {
   stop();

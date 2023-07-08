@@ -1,4 +1,5 @@
 #include "TcpClient.h"
+#include "TcpTypes.h"
 
 #include <cstdint>
 #include <iostream>
@@ -9,14 +10,29 @@
 namespace tcp {
 
 TcpClient::TcpClient(const IpAddressString& ipAddress, const PortNumber& port)
-  : m_fd(-1), 
+  : m_fd(-1),
     m_onReceiveCallback(nullptr),
     m_running(false)
 {
+  // TODO (haigh) add a logger to do this instead
   std::cout << "creating socket address" << std::endl;
   m_socketAddress.sin_family = AF_INET;
   m_socketAddress.sin_port = htons(port);
   inet_pton(AF_INET, ipAddress.c_str(), &m_socketAddress.sin_addr);
+
+  m_socketAddressLength = sizeof(m_socketAddress);
+}
+
+TcpClient::TcpClient(const IpAddressV4& ipAddress, const PortNumber& port)
+  : m_fd(-1),
+    m_onReceiveCallback(nullptr),
+    m_running(false)
+{
+  // TODO (haigh) add a logger to do this instead
+  std::cout << "creating socket address" << std::endl;
+  m_socketAddress.sin_family = AF_INET;
+  m_socketAddress.sin_port = htons(port);
+  m_socketAddress.sin_addr.s_addr = htonl(ipAddress);
 
   m_socketAddressLength = sizeof(m_socketAddress);
 }
@@ -97,7 +113,7 @@ void TcpClient::receiveThreadFunction()
 
     timeval timeout;
     timeout.tv_sec = 1;
-    
+
     int socketCount = select(m_fd + 1, &toReadFdSet, nullptr, nullptr, &timeout);
 
     if (socketCount <= 0 || !FD_ISSET(m_fd, &toReadFdSet))
@@ -107,11 +123,11 @@ void TcpClient::receiveThreadFunction()
     }
 
     char buffer[1024];
-    
+
     int receivedBytes = recv(m_fd, buffer, sizeof(buffer), 0);
     if (receivedBytes <= 0)
     {
-      // If this happens, the server has closed the connection. 
+      // If this happens, the server has closed the connection.
       // We should handle this case.
       break;
     }

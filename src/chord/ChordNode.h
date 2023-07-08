@@ -145,7 +145,7 @@ class ChordNode
 
     ThreadPool m_threadPool;
 
-    TcpServer m_tcpServer;
+    tcp::TcpServer m_tcpServer;
 
     struct NodeConnection
     {

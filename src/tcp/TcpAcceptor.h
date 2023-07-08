@@ -2,8 +2,7 @@
 #define TCP_ACCEPTOR_H_
 
 #include <cstdint>
-#include <netinet/in.h>
-#include <string>
+#include <netinet/in.h> // sockaddr_in
 #include <thread>
 #include <atomic>
 
@@ -13,6 +12,7 @@ class TcpClientAcceptor
 {
   public:
     TcpClientAcceptor(std::string ipAddress, uint16_t portNumber, TcpClientManager* clientManager);
+    TcpClientAcceptor(uint32_t ipAddress, uint16_t portNumber, TcpClientManager* clientManager);
     ~TcpClientAcceptor();   
 
     void start();

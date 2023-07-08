@@ -1,13 +1,8 @@
 #include "TcpServer.h"
 #include <cstring>
 #include <iostream>
-#include <unistd.h>
 
-
-LittleTestTcpServer::LittleTestTcpServer(std::string ipAddress, uint16_t portNumber)
-  : m_tcpClientAcceptor{ipAddress, portNumber, nullptr}
-{
-}
+namespace tcp {
 
 TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
   : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
@@ -15,44 +10,33 @@ TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
 {
 }
 
+TcpServer::TcpServer(uint32_t ipAddress, uint16_t portNumber)
+  : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
+    m_running(false)
+{
+}
+
 TcpServer::~TcpServer()
 {
-  std::cout << "TcpServer::~TcpServer started" << std::endl;
   stop();
 }
 
 void TcpServer::start()
 {
-  std::cout << "TcpServer::start started" << std::endl;
   try
   {
-  m_running = true;
+    m_running = true;
+    m_thread = std::thread(&TcpServer::threadFunction, this);
+    m_tcpClientAcceptor.start();
   }
   catch (const std::exception& e)
   {
-    std::cout << "TcpServer::start exception in setting m_running: " << e.what() << std::endl;
-  }
-  try
-  {
-  m_thread = std::thread(&TcpServer::threadFunction, this);
-  }
-  catch (const std::exception& e)
-  {
-    std::cout << "TcpServer::start exception in creating thread: " << e.what() << std::endl;
-  }
-  try
-  {
-  m_tcpClientAcceptor.start();
-  }
-  catch (const std::exception& e)
-  {
-    std::cout << "TcpServer::start exception: " << e.what() << std::endl;
+    std::cout << "TcpServer could not be started: " << e.what() << std::endl;
   }
 }
 
 void TcpServer::stop()
 {
-  std::cout << "TcpServer::stop started" << std::endl;
   if (m_running)
   {
     m_running = false;
@@ -61,7 +45,7 @@ void TcpServer::stop()
   }
 }
 
-void TcpServer::subscribeToAll(std::function<void(int, std::string)> callback)
+void TcpServer::subscribeToAll(OnReceiveCallback callback)
 {
   m_subscribers.push_back(callback);
 }
@@ -93,7 +77,6 @@ void TcpServer::threadFunction()
 
   while (m_running)
   {
-    std::cout << "TcpServer::threadFunction running" << std::endl;
     FD_ZERO(&master);
 
     auto allClientFds = m_tcpClientManager.getAllClientFds();
@@ -124,15 +107,15 @@ void TcpServer::threadFunction()
 
         if (bytesIn <= 0)
         {
-          std::cout << "Closing connection to a disconnected client " << client << ", " << socketCount << std::endl;
-
           m_tcpClientManager.processClientDisconnecion(client);
         }
         else
         {
           for (const auto& subscriber : m_subscribers)
           {
-            subscriber(client, std::string{messageBuffer, bytesIn});
+            auto* messageData = new uint8_t[bytesIn];
+            memcpy(messageData, messageBuffer, bytesIn);
+            subscriber(messageData, bytesIn);
           }
         }
       }
@@ -140,8 +123,8 @@ void TcpServer::threadFunction()
     }
   }
 
-  std::cout << "Server Terminated by call to stop()" << std::endl;
 
 }
 
+} // namespace tcp
 

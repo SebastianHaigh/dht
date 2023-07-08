@@ -78,7 +78,7 @@ class NetworkSimulator {
     std::unordered_map<uint32_t, int> m_nodeIdLookup;
 };
 
-class MockTcpServer : public TcpServer_I
+class MockTcpServer : public tcp::TcpServer_I
 {
   public:
     MockTcpServer(std::string ipAddress);
@@ -87,7 +87,7 @@ class MockTcpServer : public TcpServer_I
     void start() override;
     void stop() override;
 
-    void subscribeToAll(std::function<void(int, std::string)> callback) override;
+    void subscribeToAll(tcp::OnReceiveCallback callback) override;
     void broadcast(const std::string& message) override;
     void multicast(const std::string& message, std::vector<int> fds) override;
     void unicast(const std::string& message, int fd) override;

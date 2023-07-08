@@ -13,7 +13,7 @@ class FindSuccessorMessage : public Message
     explicit FindSuccessorMessage(CommsVersion version);
     ~FindSuccessorMessage() = default;
 
-    EncodedMessage encode() override;
+    [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] const NodeId& nodeId() const;

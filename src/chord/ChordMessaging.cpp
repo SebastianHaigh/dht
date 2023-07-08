@@ -12,7 +12,7 @@ FindSuccessorMessage::FindSuccessorMessage(CommsVersion version)
 {
 }
 
-EncodedMessage FindSuccessorMessage::encode()
+EncodedMessage FindSuccessorMessage::encode() const
 {
   EncodedMessage encoded = createEncodedMessage();
 

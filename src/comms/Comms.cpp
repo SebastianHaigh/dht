@@ -61,7 +61,7 @@ Message::Message(CommsVersion version, MessageType type)
   return m_payloadLength;
 }
 
-EncodedMessage Message::createEncodedMessage()
+EncodedMessage Message::createEncodedMessage() const
 {
   std::size_t messageLength = m_payloadLength + 8;
 
@@ -101,7 +101,7 @@ JoinMessage::JoinMessage(CommsVersion version, uint32_t ip)
 {
 }
 
-EncodedMessage JoinMessage::encode()
+EncodedMessage JoinMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 
@@ -142,7 +142,7 @@ JoinResponseMessage::JoinResponseMessage(CommsVersion version, uint32_t ip)
 {
 }
 
-EncodedMessage JoinResponseMessage::encode()
+EncodedMessage JoinResponseMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 
@@ -183,7 +183,7 @@ PositionMessage::PositionMessage(CommsVersion version, uint32_t ip)
 {
 }
 
-EncodedMessage PositionMessage::encode()
+EncodedMessage PositionMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 

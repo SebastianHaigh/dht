@@ -24,6 +24,24 @@ class FindSuccessorMessage : public Message
     NodeId m_sourceNodeId;
 };
 
+class FindSuccessorResponseMessage : public Message
+{
+  public:
+    FindSuccessorResponseMessage(CommsVersion version, const NodeId& nodeId, const NodeId& sourceNodeId);
+    explicit FindSuccessorResponseMessage(CommsVersion version);
+    ~FindSuccessorResponseMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] const NodeId& nodeId() const;
+    [[nodiscard]] const NodeId& sourceNodeId() const;
+
+  private:
+    NodeId m_nodeId;
+    NodeId m_sourceNodeId;
+};
+
 }
 
 #endif // CHORD_MESSAGING_H_

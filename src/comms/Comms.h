@@ -46,7 +46,7 @@ enum class MessageType : uint32_t
   POSITION                       = 0x00000101,
 
   CHORD_FIND_SUCCESSOR           = 0x00000201,
-  CHORD_CLOSEST_PRECEDING_NODE   = 0x00000202,
+  CHORD_FIND_SUCCESSOR_RESPONSE  = 0x00000202,
   CHORD_STABILISE                = 0x00000203,
   CHORD_NOTIFY                   = 0x00000204,
   CHORD_FIX_FINGERS              = 0x00000205,

@@ -44,7 +44,7 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
   m_connectionManager.insert(knownNodeId, ip, m_port);
 
   // Send a request to the known node to find the successor of this node
-  FindSuccessorMessage message {CommsVersion::V1, m_id};
+  FindSuccessorMessage message {CommsVersion::V1, m_id, m_id};
 
   m_connectionManager.send(knownNodeId, message);
 }
@@ -76,7 +76,7 @@ NodeId ChordNode::doFindSuccessor(const NodeId &id)
       return m_successor;
     }
 
-    FindSuccessorMessage message { CommsVersion::V1, id };
+    FindSuccessorMessage message { CommsVersion::V1, id, m_id };
 
     m_connectionManager.send(nodeId, message);
   }

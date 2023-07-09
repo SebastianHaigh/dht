@@ -9,17 +9,19 @@ namespace chord {
 class FindSuccessorMessage : public Message
 {
   public:
-    FindSuccessorMessage(CommsVersion version, const NodeId& nodeId);
+    FindSuccessorMessage(CommsVersion version, const NodeId& nodeId, const NodeId& sourceNodeId);
     explicit FindSuccessorMessage(CommsVersion version);
     ~FindSuccessorMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
-    [[nodiscard]] const NodeId& nodeId() const;
+    [[nodiscard]] const NodeId& queryNodeId() const;
+    [[nodiscard]] const NodeId& sourceNodeId() const;
 
   private:
-    NodeId m_nodeId;
+    NodeId m_nodeIdForQuery;
+    NodeId m_sourceNodeId;
 };
 
 }

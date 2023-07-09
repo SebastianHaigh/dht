@@ -111,8 +111,9 @@ TEST_CASE("Test the creation of a chord node")
 TEST_CASE("Chord messaging test")
 {
   NodeId nodeId { "12345678-abcdabcd-effeeffe-dcbadcba-87654321" };
+  NodeId sourceNodeId { "87654321-abcdabcd-eff00ffe-dcbadcba-12345678" };
 
-  FindSuccessorMessage message{CommsVersion::V1, nodeId};
+  FindSuccessorMessage message{CommsVersion::V1, nodeId, sourceNodeId};
 
   EncodedMessage encoded = message.encode();
 
@@ -120,9 +121,8 @@ TEST_CASE("Chord messaging test")
 
   decodedMessage.decode(encoded);
 
-  auto decodedNodeId = decodedMessage.nodeId();
-
-  REQUIRE(decodedNodeId == nodeId);
+  REQUIRE(decodedMessage.queryNodeId() == nodeId);
+  REQUIRE(decodedMessage.sourceNodeId() == sourceNodeId);
 }
 
 }} // namespace chord::test

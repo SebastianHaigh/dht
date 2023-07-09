@@ -46,9 +46,12 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
   // Send a request to the known node to find the successor of this node
   auto requestId = getNextAvailableRequestId();
 
-  m_pendingResponses.emplace(requestId,
-                             PendingMessageResponse{MessageType::CHORD_FIND_SUCCESSOR_RESPONSE,
-                                                    knownNodeId});
+  PendingMessageResponse pending;
+  pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
+  pending.m_nodeId = knownNodeId;
+  pending.m_hasChain = false;
+
+  m_pendingResponses.emplace(requestId, pending);
 
   FindSuccessorMessage message {CommsVersion::V1, m_id, m_id, requestId};
 
@@ -65,35 +68,34 @@ const NodeId &ChordNode::getSuccessorId()
   return m_successor;
 }
 
-std::future<NodeId> ChordNode::findSuccessor(const NodeId &id)
+void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 {
-  std::function<NodeId()> taskFn = [this, id] () -> NodeId { return doFindSuccessor(id); };
-  return m_threadPool.post(taskFn);
-}
-
-NodeId ChordNode::doFindSuccessor(const NodeId &id)
-{
-  if (id < m_id && id > m_predecessor)
+  if (message.queryNodeId() < m_id && message.queryNodeId() > m_predecessor)
   {
-    auto nodeId = closestPrecedingFinger(id);
+    auto nodeId = closestPrecedingFinger(message.queryNodeId());
 
     if (nodeId == m_id)
     {
-      return m_successor;
+      // If this is the case then we can start returning 
+      FindSuccessorResponseMessage response{ CommsVersion::V1, m_id, m_id, message.requestId() };
+
+      m_connectionManager.send(message.sourceNodeId(), response);
     }
 
     auto requestId = getNextAvailableRequestId();
 
-    m_pendingResponses.emplace(requestId,
-                               PendingMessageResponse{MessageType::CHORD_FIND_SUCCESSOR_RESPONSE,
-                                                      nodeId});
+    PendingMessageResponse pending;
+    pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
+    pending.m_nodeId = nodeId;
+    pending.m_hasChain = true;
+    pending.m_chainingDestination = message.sourceNodeId();
 
-    FindSuccessorMessage message { CommsVersion::V1, id, m_id, requestId };
+    m_pendingResponses.emplace(requestId, pending);
 
-    m_connectionManager.send(nodeId, message);
+    FindSuccessorMessage messageToForward{ CommsVersion::V1, message.queryNodeId(), m_id, requestId };
+
+    m_connectionManager.send(nodeId, messageToForward);
   }
-
-  return m_successor;
 
 }
 
@@ -117,28 +119,42 @@ void ChordNode::initialiseFingerTable()
   }
 }
 
-void ChordNode::updateOthers()
-{
-
-}
-
 void ChordNode::updateFingerTable(const ChordNode &node, uint16_t i)
 {
   
 }
 
-void ChordNode::processReceivedMessage(const Message& request)
+void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 {
-  switch (request.type())
+  // Ignore comms version for now, this will probably be handled differently at a later time
+
+  // get the message type, which is a uint32_t starting at encoded.message[2]
+  auto* type = reinterpret_cast<MessageType*>(&encoded.m_message[2]);
+
+  switch (*type)
   {
     case MessageType::CHORD_FIND_SUCCESSOR:
     {
+      FindSuccessorMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      doFindSuccessor(message);
       break;
     }
+
+    case MessageType::CHORD_FIND_SUCCESSOR_RESPONSE:
+    {
+      FindSuccessorResponseMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      break;
+    }
+
     default:
     {
-      // Not a chord message
-      break;
+      // This should probably be logged
     }
   }
 }

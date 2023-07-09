@@ -1,9 +1,9 @@
 #ifndef CHORD_NODE_H_
 #define CHORD_NODE_H_
 
-#include "../async/ThreadPool.h"
 #include "../comms/Comms.h"
 
+#include "ChordMessaging.h"
 #include "NodeId.h"
 #include "FingerTable.h"
 #include "ConnectionManager.h"
@@ -26,20 +26,16 @@ class ChordNode
     const NodeId& getPredecessorId();
     const NodeId& getSuccessorId();
 
-    std::future<NodeId> findSuccessor(const NodeId& id);
-    NodeId findPredecessor(const NodeId& id);
     const NodeId& closestPrecedingFinger(const NodeId& id);
 
   private:
 
-    NodeId doFindSuccessor(const NodeId& id);
-    void doFindPredecessor(const NodeId& id);
+    void doFindSuccessor(const FindSuccessorMessage& message);
 
     void initialiseFingerTable();
-    void updateOthers();
     void updateFingerTable(const ChordNode& node, uint16_t i);
 
-    void processReceivedMessage(const Message& request);
+    void handleReceivedMessage(const EncodedMessage& encoded);
 
     static NodeId createNodeId(const std::string& ipAddress);
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
@@ -53,8 +49,6 @@ class ChordNode
     const uint32_t m_ipAddress;
     const uint16_t m_port;
 
-    ThreadPool m_threadPool;
-
     ConnectionManager m_connectionManager;
 
     uint32_t m_requestIdCounter = 0;
@@ -65,6 +59,8 @@ class ChordNode
     {
       MessageType m_type;
       NodeId m_nodeId;
+      bool m_hasChain;
+      NodeId m_chainingDestination;
     };
 
     std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;

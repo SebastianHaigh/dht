@@ -1,19 +1,19 @@
 #ifndef CHORD_NODE_H_
 #define CHORD_NODE_H_
 
-#include "../tcp/TcpServer.h"
-#include "../tcp/TcpClient.h"
 #include "../async/ThreadPool.h"
 #include "../comms/Comms.h"
 
 #include "NodeId.h"
 #include "FingerTable.h"
+#include "ConnectionManager.h"
 
 namespace chord {
 
 static constexpr uint8_t NULL_NODE_ID[20] = { 0 };
 
 using IpAddress = std::string;
+
 
 class ChordNode
 {
@@ -41,9 +41,6 @@ class ChordNode
 
     void processReceivedMessage(const Message& request);
 
-    void sendFindSuccessorRequest(const NodeId& id);
-    void sendFindPredecessorRequest(const NodeId& id);
-
     static NodeId createNodeId(const std::string& ipAddress);
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 
@@ -56,20 +53,7 @@ class ChordNode
 
     ThreadPool m_threadPool;
 
-    tcp::TcpServer m_tcpServer;
-
-    struct NodeConnection
-    {
-      NodeConnection(const NodeId& id, const std::string& ipAddress, uint16_t port)
-        : m_id(id),
-          m_tcpClient(std::make_unique<tcp::TcpClient>(ipAddress, port))
-      {
-      }
-      NodeId m_id;
-      std::unique_ptr<tcp::TcpClient_I> m_tcpClient;
-    };
-
-    std::vector<NodeConnection> m_nodeConnections;
+    ConnectionManager m_connectionManager;
 };
 
 } // namespace chord

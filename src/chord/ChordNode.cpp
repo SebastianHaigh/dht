@@ -13,7 +13,7 @@ ChordNode::ChordNode(const std::string& ip, uint16_t port)
     m_fingerTable(m_id),
     m_ipAddress{convertIpAddressToInteger(ip)},
     m_port{port},
-    m_tcpServer{ip, port}
+    m_connectionManager(NodeId{m_ipAddress}, m_ipAddress, port)
 {
 }
 
@@ -32,32 +32,21 @@ uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
   return sa.sin_addr.s_addr;
 }
 
-
 void ChordNode::join(const std::string &knownNodeIpAddress)
 {
   // The first thing we need to do is create a TcpClient in order to establish a connection to this node
-  hashing::SHA1Hash digest;
-  hashing::sha1((uint8_t*) knownNodeIpAddress.c_str(), knownNodeIpAddress.length(), digest);
+  auto ip = convertIpAddressToInteger(knownNodeIpAddress);
 
-  // Create a NodeId from the digest
-  NodeId knownNodeId{ digest };
-
-  // Create a TcpClient to connect to the known node
-  NodeConnection nodeConnection{knownNodeId, knownNodeIpAddress, 5000};
+  // Create a NodeId from the ip address
+  NodeId knownNodeId{ ip };
 
   // Insert the node connection into the node connections vector in sorted order
-  auto it = std::lower_bound(m_nodeConnections.begin(), 
-                             m_nodeConnections.end(), 
-                             nodeConnection, 
-                             [] (const NodeConnection& lhs, const NodeConnection& rhs) 
-                             { 
-                               return lhs.m_id < rhs.m_id;
-                             });
-
-  m_nodeConnections.insert(it, std::move(nodeConnection));
+  m_connectionManager.insert(knownNodeId, ip, m_port);
 
   // Send a request to the known node to find the successor of this node
-  sendFindSuccessorRequest(m_id);
+  FindSuccessorMessage message {CommsVersion::V1, m_id};
+
+  m_connectionManager.send(knownNodeId, message);
 }
 
 const NodeId &ChordNode::getPredecessorId()
@@ -87,7 +76,9 @@ NodeId ChordNode::doFindSuccessor(const NodeId &id)
       return m_successor;
     }
 
-    sendFindPredecessorRequest(nodeId);
+    FindSuccessorMessage message { CommsVersion::V1, id };
+
+    m_connectionManager.send(nodeId, message);
   }
 
   return m_successor;
@@ -122,46 +113,6 @@ void ChordNode::updateOthers()
 void ChordNode::updateFingerTable(const ChordNode &node, uint16_t i)
 {
   
-}
-
-void ChordNode::sendFindSuccessorRequest(const NodeId &id)
-{
-  auto nodeConnection = std::lower_bound(m_nodeConnections.begin(), 
-                                         m_nodeConnections.end(), 
-                                         id,
-                                         [](const NodeConnection& lhs, const NodeId& rhs) 
-                                         { 
-                                           return lhs.m_id < rhs;
-                                         });
-
-  if (nodeConnection != m_nodeConnections.end())
-  {
-    FindSuccessorMessage message{ CommsVersion::V1, id };
-
-    auto encoded = message.encode();
-
-    nodeConnection->m_tcpClient->send(encoded.m_message, encoded.m_length);
-  }
-}
-
-void ChordNode::sendFindPredecessorRequest(const NodeId &id)
-{
-  auto nodeConnection = std::lower_bound(m_nodeConnections.begin(), 
-                                         m_nodeConnections.end(), 
-                                         id,
-                                         [](const NodeConnection& lhs, const NodeId& rhs) 
-                                         { 
-                                           return lhs.m_id < rhs;
-                                         });
-
-  if (nodeConnection != m_nodeConnections.end())
-  {
-    FindSuccessorMessage message{ CommsVersion::V1, id };
-
-    auto encoded = message.encode();
-
-    nodeConnection->m_tcpClient->send(encoded.m_message, encoded.m_length);
-  }
 }
 
 void ChordNode::processReceivedMessage(const Message& request)

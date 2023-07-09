@@ -83,7 +83,7 @@ void TcpClient::disconnect()
   }
 }
 
-void TcpClient::send(const uint8_t* data, int size)
+void TcpClient::send(const uint8_t* data, std::size_t size)
 {
   if (!m_running || m_fd < 0)
   {

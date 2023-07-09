@@ -29,7 +29,7 @@ class TcpClient_I
 
     virtual void connectToServer() = 0;
     virtual void disconnect() = 0;
-    virtual void send(const uint8_t* data, int size) = 0;
+    virtual void send(const uint8_t* data, std::size_t size) = 0;
     virtual void setOnReceiveCallback(onReceiveCallback callback) = 0;
 };
 
@@ -46,7 +46,7 @@ class TcpClient : public TcpClient_I
 
     void connectToServer() override;
     void disconnect() override;
-    void send(const uint8_t* data, int size) override;
+    void send(const uint8_t* data, std::size_t size) override;
     void setOnReceiveCallback(onReceiveCallback callback) override;
 
   private:

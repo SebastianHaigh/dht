@@ -57,7 +57,7 @@ void swapEndian(T* value)
 }
 
 template<typename T>
-void encodeSingleValue(T* toEncode, uint8_t* encoded)
+void encodeSingleValue(const T* toEncode, uint8_t* encoded)
 {
   static_assert(sizeof(T) <= 8, "Single value must be less than 8 bytes to encode");
 

@@ -13,7 +13,6 @@
 // message-type
 // message-length
 // message-content
-// footer
 //
 // All messages are send big endian so this will have to be converted if the system is little endian
 //
@@ -21,18 +20,14 @@
 // Message-Type 4 bytes
 // payload-length 2 bytes
 // payload (payload-length bytes)
-// footer 20 bytes
 //
-// the footer is an sha1 hash that checks the consistancy of the message
-
 // The messaging protocol will work like this:
 //
 // Step 1: endian convert and read the messaging version, if unsupported drop
 // Step 2: endian convert and read the message type
-// Step 3: endian convert and read the payload-length
-// Step 4: use the payload length the work out the position of the footer and read
-// Step 5: verify the message and hash match
-// Step 6: create an object matching the message type and use this to decode the message
+// Step 3: create an object matching the message type and use this to decode the message
+// Step 4: endian convert and read the payload-length
+// Step 5: decode the payload
 
 #include <cstddef>
 #include <cstdint>
@@ -47,73 +42,9 @@ enum class MessageType : uint32_t
 {
   JOIN              = 0x00000001,
   JOIN_RESPONSE     = 0x00000002,
+
+  POSITION          = 0x00000101,
 };
-
-inline std::size_t minimumMessageLength()
-{
-  return 28;
-}
-
-inline uint8_t* getMessageType_p(uint8_t* message)
-{
-  return message + 2;
-}
-
-inline uint8_t* getPayloadLength_p(uint8_t* message)
-{
-  return message + 6;
-}
-
-inline uint8_t* getPayload_p(uint8_t* message)
-{
-  return message + 2;
-}
-
-inline uint8_t* getChecksum_p(uint8_t* message, std::size_t payloadLength)
-{
-  return getPayload_p(message) + payloadLength;
-}
-
-bool isVersionSupported(uint8_t* message);
-
-inline MessageType getMessageType(uint8_t* message)
-{
-  auto* messageType_p = getMessageType_p(message);
-  auto* messageTypeUint32_p = reinterpret_cast<uint32_t*>(messageType_p);
-
-  return static_cast<MessageType>(*messageTypeUint32_p);
-}
-
-inline uint16_t getPayloadLength(uint8_t* message)
-{
-  auto* payloadLength_p = getPayloadLength_p(message);
-  auto* payloadLengthUint16_t = reinterpret_cast<uint16_t*>(payloadLength_p);
-
-  return *payloadLengthUint16_t;
-}
-
-inline std::size_t getMessageLengthWithoutChecksum(uint8_t* message)
-{
-  return 2 + 4 + 2 + getPayloadLength(message);
-}
-
-inline bool verifyChecksum(uint8_t* message)
-{
-  auto* checksum_p = getChecksum_p(message, getPayloadLength(message));
-
-  hashing::SHA1Hash messageHash;
-
-  hashing::sha1(message, getMessageLengthWithoutChecksum(message), messageHash);
-
-  for (uint8_t i : messageHash)
-  {
-    if (*checksum_p != i) return false;
-
-    checksum_p++;
-  }
-
-  return true;
-}
 
 class EncodedMessage
 {
@@ -142,15 +73,13 @@ class Message
     [[nodiscard]] const CommsVersion& version() const;
     [[nodiscard]] std::size_t payloadLength() const;
 
-    virtual EncodedMessage encode() = 0;
+    [[nodiscard]] virtual EncodedMessage encode() const = 0;
     virtual void decode(const EncodedMessage& message) = 0;
   
   protected:
-    EncodedMessage createEncodedMessage();
+    [[nodiscard]] EncodedMessage createEncodedMessage() const;
 
     void decodeHeaders(const EncodedMessage& encodedMessage);
-
-    void generateChecksum(EncodedMessage& encodedMessage);
 
   private:
     CommsVersion m_version;
@@ -165,10 +94,46 @@ class JoinMessage : public Message
     JoinMessage(CommsVersion version, uint32_t ip);
     ~JoinMessage() = default;
 
-    EncodedMessage encode() override;
+    [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;
+
+  private:
+
+    uint32_t m_ip;
+};
+
+class JoinResponseMessage : public Message
+{
+  public:
+    explicit JoinResponseMessage(CommsVersion version);
+    JoinResponseMessage(CommsVersion version, uint32_t ip);
+    ~JoinResponseMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] uint32_t ip() const;
+
+  private:
+
+    uint32_t m_ip;
+};
+
+class PositionMessage : public Message
+{
+  public:
+    explicit PositionMessage(CommsVersion version);
+    PositionMessage(CommsVersion version, uint32_t ip);
+    ~PositionMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] uint32_t ip() const;
+    [[nodiscard]] std::size_t numNeighbours() const;
+    [[nodiscard]] uint32_t neighbour(std::size_t index) const;
 
   private:
 

@@ -61,9 +61,9 @@ Message::Message(CommsVersion version, MessageType type)
   return m_payloadLength;
 }
 
-EncodedMessage Message::createEncodedMessage()
+EncodedMessage Message::createEncodedMessage() const
 {
-  std::size_t messageLength = m_payloadLength + 28;
+  std::size_t messageLength = m_payloadLength + 8;
 
   EncodedMessage encoded{messageLength};
 
@@ -85,16 +85,6 @@ void Message::decodeHeaders(const EncodedMessage& encodedMessage)
   decodeSingleValue(msg_p + sizeof(CommsVersion) + sizeof(MessageType), (uint16_t*) &m_payloadLength);
 }
 
-// Should the checksum be part of this message or should it be in the wrapped packet that is generated for point to point cast
-void Message::generateChecksum(EncodedMessage& encodedMessage)
-{
-  std::size_t checksumStartIndex{encodedMessage.m_length - 20};
-
-  auto* checksum_p = &encodedMessage.m_message[checksumStartIndex];
-
-  hashing::sha1(encodedMessage.m_message, checksumStartIndex, checksum_p);
-}
-
 JoinMessage::JoinMessage(CommsVersion version)
   : Message{version,
             MessageType::JOIN,
@@ -111,15 +101,13 @@ JoinMessage::JoinMessage(CommsVersion version, uint32_t ip)
 {
 }
 
-EncodedMessage JoinMessage::encode()
+EncodedMessage JoinMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 
   auto* payload_p = &encoded.m_message[2 + 4 + 2];
 
   encodeSingleValue(&m_ip, payload_p);
-
-  generateChecksum(encoded);
 
   return std::move(encoded);
 }
@@ -134,6 +122,88 @@ void JoinMessage::decode(const EncodedMessage& message)
 }
 
 [[nodiscard]] uint32_t JoinMessage::ip() const
+{
+  return m_ip;
+}
+
+JoinResponseMessage::JoinResponseMessage(CommsVersion version)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(0)
+{
+}
+
+JoinResponseMessage::JoinResponseMessage(CommsVersion version, uint32_t ip)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(ip)
+{
+}
+
+EncodedMessage JoinResponseMessage::encode() const
+{
+  auto encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+
+  encodeSingleValue(&m_ip, payload_p);
+
+  return std::move(encoded);
+}
+
+void JoinResponseMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_ip);
+}
+
+[[nodiscard]] uint32_t JoinResponseMessage::ip() const
+{
+  return m_ip;
+}
+
+PositionMessage::PositionMessage(CommsVersion version)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(0)
+{
+}
+
+PositionMessage::PositionMessage(CommsVersion version, uint32_t ip)
+  : Message{version,
+            MessageType::JOIN_RESPONSE,
+            4},
+    m_ip(ip)
+{
+}
+
+EncodedMessage PositionMessage::encode() const
+{
+  auto encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+
+  encodeSingleValue(&m_ip, payload_p);
+
+  return std::move(encoded);
+}
+
+void PositionMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_ip);
+}
+
+[[nodiscard]] uint32_t PositionMessage::ip() const
 {
   return m_ip;
 }

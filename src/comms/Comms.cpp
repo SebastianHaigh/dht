@@ -39,13 +39,6 @@ Message::Message(CommsVersion version, MessageType type, std::size_t payloadLeng
 {
 }
 
-Message::Message(CommsVersion version, MessageType type)
-  : m_version(version),
-    m_type(type),
-    m_payloadLength(0)
-{
-}
-
 [[nodiscard]] const MessageType& Message::type() const
 {
   return m_type;

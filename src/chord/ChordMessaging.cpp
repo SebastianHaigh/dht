@@ -6,7 +6,7 @@ namespace chord {
 FindSuccessorMessage::FindSuccessorMessage(CommsVersion version, 
                                            const NodeId& nodeId,
                                            const NodeId& sourceNodeId)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR),
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR, 2 * sizeof(NodeId)),
     m_nodeIdForQuery(nodeId),
     m_sourceNodeId(sourceNodeId)
 {

@@ -73,7 +73,6 @@ class Message
 {
   public:
     Message(CommsVersion version, MessageType type, std::size_t payloadLength);
-    Message(CommsVersion version, MessageType type);
     virtual ~Message() = default;
 
     [[nodiscard]] const MessageType& type() const;

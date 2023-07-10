@@ -121,6 +121,11 @@ void FindSuccessorResponseMessage::decode(const EncodedMessage& message)
   return m_nodeId;
 }
 
+[[nodiscard]] const NodeId& FindSuccessorResponseMessage::sourceNodeId() const
+{
+  return m_sourceNodeId;
+}
+
 [[nodiscard]] uint32_t FindSuccessorResponseMessage::requestId() const
 {
   return m_requestId;

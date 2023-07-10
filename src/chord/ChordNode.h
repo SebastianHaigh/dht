@@ -1,6 +1,8 @@
 #ifndef CHORD_NODE_H_
 #define CHORD_NODE_H_
 
+#include <future>
+
 #include "../comms/Comms.h"
 
 #include "ChordMessaging.h"
@@ -31,6 +33,7 @@ class ChordNode
   private:
 
     void doFindSuccessor(const FindSuccessorMessage& message);
+    void handleFindSuccessorResponse(const FindSuccessorResponseMessage& message);
 
     void initialiseFingerTable();
     void updateFingerTable(const ChordNode& node, uint16_t i);
@@ -64,6 +67,7 @@ class ChordNode
     };
 
     std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;
+    std::unordered_map<uint32_t, std::promise<NodeId>> m_findSuccessorPromises;
 };
 
 } // namespace chord

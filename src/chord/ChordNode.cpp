@@ -53,9 +53,17 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
 
   m_pendingResponses.emplace(requestId, pending);
 
-  FindSuccessorMessage message {CommsVersion::V1, m_id, m_id, requestId};
+  std::promise<NodeId> findSuccessorPromise;
+  std::future<NodeId> findSuccessorFuture = findSuccessorPromise.get_future();
+
+  m_findSuccessorPromises.emplace(requestId, std::move(findSuccessorPromise));
+
+  FindSuccessorMessage message{ CommsVersion::V1, m_id, m_id, requestId };
 
   m_connectionManager.send(knownNodeId, message);
+
+  // We are going to wait here until we get a response
+  m_successor = findSuccessorFuture.get();
 }
 
 const NodeId &ChordNode::getPredecessorId()
@@ -97,6 +105,45 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
     m_connectionManager.send(nodeId, messageToForward);
   }
 
+}
+
+void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& message)
+{
+  auto it = m_pendingResponses.find(message.requestId());
+
+  if (it == m_pendingResponses.end())
+  {
+    std::cout << "Unexpected find successor response from node: " << message.sourceNodeId().toString() << std::endl;
+    return;
+  }
+
+  if (it->second.m_hasChain)
+  {
+    // This message is not for us, forward it on
+    FindSuccessorResponseMessage messageToForward{ CommsVersion::V1,
+                                                   message.nodeId(),
+                                                   m_id,
+                                                   message.requestId() };
+
+    m_connectionManager.send(it->second.m_chainingDestination, messageToForward);
+
+    m_pendingResponses.erase(it);
+
+    return;
+  }
+
+  // This message is for us, there should be a promise waiting for the result
+  auto promiseIter = m_findSuccessorPromises.find(message.requestId());
+
+  if (promiseIter == m_findSuccessorPromises.end())
+  {
+    std::cout << "Expected promise, but there wasn't one" << std::endl;
+    return;
+  }
+
+  promiseIter->second.set_value(message.nodeId());
+
+  m_findSuccessorPromises.erase(promiseIter);
 }
 
 const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
@@ -149,6 +196,7 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
+      handleFindSuccessorResponse(message);
       break;
     }
 

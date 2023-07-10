@@ -5,15 +5,18 @@ namespace chord {
 
 FindSuccessorMessage::FindSuccessorMessage(CommsVersion version, 
                                            const NodeId& nodeId,
-                                           const NodeId& sourceNodeId)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR, 2 * sizeof(NodeId)),
+                                           const NodeId& sourceNodeId,
+                                           uint32_t requestId)
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR, 2 * sizeof(NodeId) + 4),
     m_nodeIdForQuery(nodeId),
-    m_sourceNodeId(sourceNodeId)
+    m_sourceNodeId(sourceNodeId),
+    m_requestId(requestId)
 {
 }
 
 FindSuccessorMessage::FindSuccessorMessage(CommsVersion version)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR, 2 * sizeof(NodeId))
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR, 2 * sizeof(NodeId) + 4),
+    m_requestId(0)
 {
 }
 
@@ -27,6 +30,9 @@ FindSuccessorMessage::FindSuccessorMessage(CommsVersion version)
   payload_p += sizeof(NodeId);
 
   encodeSingleValue(&m_sourceNodeId, payload_p);
+  payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_requestId, payload_p);
 
   return std::move(encoded);
 }
@@ -41,6 +47,9 @@ void FindSuccessorMessage::decode(const EncodedMessage& message)
   payload_p += sizeof(NodeId);
 
   decodeSingleValue(payload_p, &m_sourceNodeId);
+  payload_p += sizeof(NodeId);
+
+  decodeSingleValue(payload_p, &m_requestId);
 }
 
 [[nodiscard]] const NodeId& FindSuccessorMessage::queryNodeId() const
@@ -53,17 +62,25 @@ void FindSuccessorMessage::decode(const EncodedMessage& message)
   return m_sourceNodeId;
 }
 
+[[nodiscard]] uint32_t FindSuccessorMessage::requestId() const
+{
+  return m_requestId;
+}
+
 FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version,
                                                            const NodeId& nodeId,
-                                                           const NodeId& sourceNodeId)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId)),
+                                                           const NodeId& sourceNodeId,
+                                                           uint32_t requestId)
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId) + 4),
     m_nodeId(nodeId),
-    m_sourceNodeId(sourceNodeId)
+    m_sourceNodeId(sourceNodeId),
+    m_requestId(requestId)
 {
 }
 
 FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId))
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId) + 4),
+    m_requestId(0)
 {
 }
 
@@ -77,6 +94,9 @@ FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version)
   payload_p += sizeof(NodeId);
 
   encodeSingleValue(&m_sourceNodeId, payload_p);
+  payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_requestId, payload_p);
 
   return std::move(encoded);
 }
@@ -91,11 +111,19 @@ void FindSuccessorResponseMessage::decode(const EncodedMessage& message)
   payload_p += sizeof(NodeId);
 
   decodeSingleValue(payload_p, &m_sourceNodeId);
+  payload_p += sizeof(NodeId);
+
+  decodeSingleValue(payload_p, &m_requestId);
 }
 
 [[nodiscard]] const NodeId& FindSuccessorResponseMessage::nodeId() const
 {
   return m_nodeId;
+}
+
+[[nodiscard]] uint32_t FindSuccessorResponseMessage::requestId() const
+{
+  return m_requestId;
 }
 
 }

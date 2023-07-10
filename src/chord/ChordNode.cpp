@@ -44,7 +44,13 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
   m_connectionManager.insert(knownNodeId, ip, m_port);
 
   // Send a request to the known node to find the successor of this node
-  FindSuccessorMessage message {CommsVersion::V1, m_id, m_id};
+  auto requestId = getNextAvailableRequestId();
+
+  m_pendingResponses.emplace(requestId,
+                             PendingMessageResponse{MessageType::CHORD_FIND_SUCCESSOR_RESPONSE,
+                                                    knownNodeId});
+
+  FindSuccessorMessage message {CommsVersion::V1, m_id, m_id, requestId};
 
   m_connectionManager.send(knownNodeId, message);
 }
@@ -61,7 +67,7 @@ const NodeId &ChordNode::getSuccessorId()
 
 std::future<NodeId> ChordNode::findSuccessor(const NodeId &id)
 {
-  std::function<NodeId()> taskFn = [this, id] () -> NodeId { return doFindSuccessor(id); }; 
+  std::function<NodeId()> taskFn = [this, id] () -> NodeId { return doFindSuccessor(id); };
   return m_threadPool.post(taskFn);
 }
 
@@ -70,13 +76,19 @@ NodeId ChordNode::doFindSuccessor(const NodeId &id)
   if (id < m_id && id > m_predecessor)
   {
     auto nodeId = closestPrecedingFinger(id);
-    
+
     if (nodeId == m_id)
     {
       return m_successor;
     }
 
-    FindSuccessorMessage message { CommsVersion::V1, id, m_id };
+    auto requestId = getNextAvailableRequestId();
+
+    m_pendingResponses.emplace(requestId,
+                               PendingMessageResponse{MessageType::CHORD_FIND_SUCCESSOR_RESPONSE,
+                                                      nodeId});
+
+    FindSuccessorMessage message { CommsVersion::V1, id, m_id, requestId };
 
     m_connectionManager.send(nodeId, message);
   }
@@ -129,6 +141,25 @@ void ChordNode::processReceivedMessage(const Message& request)
       break;
     }
   }
+}
+
+uint32_t ChordNode::getNextAvailableRequestId()
+{
+  // Zero is a null value for requestId, so always skip it
+  if (m_requestIdCounter == 0) m_requestIdCounter++;
+
+  auto it = m_pendingResponses.find(m_requestIdCounter);
+
+  if (it == m_pendingResponses.end()) return m_requestIdCounter++;
+
+  while (it != m_pendingResponses.end())
+  {
+    it = m_pendingResponses.find(m_requestIdCounter);
+    if (it == m_pendingResponses.end()) return m_requestIdCounter++;
+  }
+
+  // should never get here, but this return statement suppresses a compiler warning
+  return 0;
 }
 
 } // namespace chord

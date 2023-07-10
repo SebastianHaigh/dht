@@ -113,7 +113,7 @@ TEST_CASE("Chord messaging test")
   NodeId nodeId { "12345678-abcdabcd-effeeffe-dcbadcba-87654321" };
   NodeId sourceNodeId { "87654321-abcdabcd-eff00ffe-dcbadcba-12345678" };
 
-  FindSuccessorMessage message{CommsVersion::V1, nodeId, sourceNodeId};
+  FindSuccessorMessage message{CommsVersion::V1, nodeId, sourceNodeId, 3987};
 
   EncodedMessage encoded = message.encode();
 
@@ -123,6 +123,7 @@ TEST_CASE("Chord messaging test")
 
   REQUIRE(decodedMessage.queryNodeId() == nodeId);
   REQUIRE(decodedMessage.sourceNodeId() == sourceNodeId);
+  REQUIRE(decodedMessage.requestId() == 3987);
 }
 
 }} // namespace chord::test

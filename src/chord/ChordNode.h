@@ -44,6 +44,8 @@ class ChordNode
     static NodeId createNodeId(const std::string& ipAddress);
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 
+    uint32_t getNextAvailableRequestId();
+
     NodeId m_id;
     NodeId m_predecessor;
     NodeId m_successor;
@@ -54,6 +56,18 @@ class ChordNode
     ThreadPool m_threadPool;
 
     ConnectionManager m_connectionManager;
+
+    uint32_t m_requestIdCounter = 0;
+
+    // Stores the details of a message this node is waiting for
+    //   type of message and the ID of the node we are expecting to received the message from.
+    struct PendingMessageResponse
+    {
+      MessageType m_type;
+      NodeId m_nodeId;
+    };
+
+    std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;
 };
 
 } // namespace chord

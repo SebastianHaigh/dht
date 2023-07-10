@@ -60,6 +60,8 @@ class NetworkSimulator {
     void run(); // TODO (haigh) is this method even needed?
     SimulatedNode& addNode(uint32_t ipAddress);
     SimulatedNode& addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler);
+    SimulatedNode& addNode(const std::string& ipAddress);
+    SimulatedNode& addNode(const std::string& ipAddress, NodeReceiveHandler receiveHandler);
     void sendMessage(uint32_t sourceIpAddress,
                      uint32_t destinationIpAddress,
                      uint8_t* message,

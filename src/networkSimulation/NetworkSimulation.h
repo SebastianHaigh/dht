@@ -15,8 +15,8 @@ using NodeReceiveHandler = std::function<void(uint32_t, uint8_t*, size_t)>;
 
 class SimulatedNode {
   public:
-    SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCallback);
-    SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCallback, NodeReceiveHandler receiveHandler);
+    SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback);
+    SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback, NodeReceiveHandler receiveHandler);
     virtual ~SimulatedNode() = default;
     void run();
     int nodeId() const;
@@ -30,7 +30,7 @@ class SimulatedNode {
 
   private:
     int m_nodeId;
-    int m_ipAddress;
+    uint32_t m_ipAddress;
     OnSendCallback m_onSendCallback;
     NodeReceiveHandler m_receiveHandler;
 };

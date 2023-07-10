@@ -129,7 +129,7 @@ void NetworkSimulator::removeAllLinksForNode(int nodeId)
   }
 }
 
-SimulatedNode::SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCallback)
+SimulatedNode::SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback)
   : m_nodeId(nodeId),
     m_ipAddress(ipAddress),
     m_onSendCallback(std::move(onSendCallback))
@@ -137,7 +137,7 @@ SimulatedNode::SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCal
 }
 
 SimulatedNode::SimulatedNode(int nodeId,
-                             int ipAddress,
+                             uint32_t ipAddress,
                              OnSendCallback onSendCallback,
                              NodeReceiveHandler receiveHandler)
   : m_nodeId(nodeId),

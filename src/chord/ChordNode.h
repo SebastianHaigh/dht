@@ -15,12 +15,12 @@ namespace chord {
 static constexpr uint8_t NULL_NODE_ID[20] = { 0 };
 
 using IpAddress = std::string;
-
+using ConnectionManagerFactory = std::function<std::unique_ptr<ConnectionManager_I>(const NodeId&, uint32_t, uint16_t)>;
 
 class ChordNode
 {
   public:
-    ChordNode(const std::string& ip, uint16_t port);
+    ChordNode(const std::string& ip, uint16_t port, const ConnectionManagerFactory& factory);
 
     void join(const std::string &knownNodeIpAddress);
     NodeId& getId();
@@ -52,7 +52,7 @@ class ChordNode
     const uint32_t m_ipAddress;
     const uint16_t m_port;
 
-    ConnectionManager m_connectionManager;
+    std::unique_ptr<ConnectionManager_I> m_connectionManager;
 
     uint32_t m_requestIdCounter = 0;
 

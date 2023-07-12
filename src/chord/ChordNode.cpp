@@ -6,14 +6,16 @@
 
 namespace chord {
 
-ChordNode::ChordNode(const std::string& ip, uint16_t port)
+ChordNode::ChordNode(const std::string& ip,
+                     uint16_t port,
+                     const ConnectionManagerFactory& connectionManagerFactory)
   : m_id(createNodeId(ip)),
     m_predecessor{},
     m_successor{},
     m_fingerTable(m_id),
     m_ipAddress{convertIpAddressToInteger(ip)},
     m_port{port},
-    m_connectionManager(NodeId{m_ipAddress}, m_ipAddress, port)
+    m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
 {
 }
 
@@ -41,7 +43,7 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
   NodeId knownNodeId{ ip };
 
   // Insert the node connection into the node connections vector in sorted order
-  m_connectionManager.insert(knownNodeId, ip, m_port);
+  m_connectionManager->insert(knownNodeId, ip, m_port);
 
   // Send a request to the known node to find the successor of this node
   auto requestId = getNextAvailableRequestId();
@@ -60,7 +62,7 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
 
   FindSuccessorMessage message{ CommsVersion::V1, m_id, m_id, requestId };
 
-  m_connectionManager.send(knownNodeId, message);
+  m_connectionManager->send(knownNodeId, message);
 
   // We are going to wait here until we get a response
   m_successor = findSuccessorFuture.get();
@@ -87,7 +89,7 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
       // If this is the case then we can start returning 
       FindSuccessorResponseMessage response{ CommsVersion::V1, m_id, m_id, message.requestId() };
 
-      m_connectionManager.send(message.sourceNodeId(), response);
+      m_connectionManager->send(message.sourceNodeId(), response);
     }
 
     auto requestId = getNextAvailableRequestId();
@@ -102,7 +104,7 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 
     FindSuccessorMessage messageToForward{ CommsVersion::V1, message.queryNodeId(), m_id, requestId };
 
-    m_connectionManager.send(nodeId, messageToForward);
+    m_connectionManager->send(nodeId, messageToForward);
   }
 
 }
@@ -125,7 +127,7 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
                                                    m_id,
                                                    message.requestId() };
 
-    m_connectionManager.send(it->second.m_chainingDestination, messageToForward);
+    m_connectionManager->send(it->second.m_chainingDestination, messageToForward);
 
     m_pendingResponses.erase(it);
 

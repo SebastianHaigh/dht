@@ -8,8 +8,79 @@
 #include "../ChordNode.h"
 #include "../ChordMessaging.h"
 #include "../NodeId.h"
+#include "../../networkSimulation/NetworkSimulation.h"
+
 
 namespace chord { namespace test {
+
+class MockConnectionManager : public ConnectionManager_I
+{
+  public:
+    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node)
+      : m_nodeId(nodeId),
+        m_simulatedNode(node)
+    {
+    }
+
+    bool send(const NodeId& nodeId, const Message& message) override
+    {
+      uint32_t ip{ 0 };
+      bool foundNode{ false };
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        if (idIpPair.first == nodeId)
+        {
+          ip = idIpPair.second;
+          foundNode = true;
+          break;
+        }
+      }
+
+      if (not foundNode) return false;
+
+      auto encoded = message.encode();
+
+      m_simulatedNode.sendMessage(ip, encoded.m_message, encoded.m_length);
+
+      return true;
+    }
+
+    void registerReceiveHandler(tcp::OnReceiveCallback callback) override
+    {
+      // TODO (haigh) Is this the right thing to do with this callback?
+      NodeReceiveHandler handler = [callback] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
+      {
+        callback(message, messageLength);
+      };
+
+      m_simulatedNode.registerReceiveHandler(handler);
+    }
+
+    void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override
+    {
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        // There is already a connection to this node
+        if (idIpPair.first == id) return;
+      }
+
+      m_nodeIdToIp.emplace_back(id, ipAddress);
+
+    }
+
+    void remove(const NodeId& id) override
+    {
+    }
+
+  private:
+    NodeId m_nodeId;
+    SimulatedNode& m_simulatedNode;
+
+    std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
+
+    tcp::OnReceiveCallback m_onReceive;
+};
+
 class Timer {
   private:
     std::chrono::time_point<std::chrono::high_resolution_clock> start_timepoint;
@@ -96,16 +167,31 @@ TEST_CASE("Add some more node ids")
 
 TEST_CASE("Test the creation of a chord node")
 {
-  ChordNode node{"200.178.0.1", 0};
-  
-  // Create another node and join the network that is currently formed by the first node
-  
-  ChordNode node2{"200.178.0.5", 0};
+  NetworkSimulator networkSimulator;
 
-  node2.join("200.178.0.1");
-  
-  REQUIRE(node.getSuccessorId() == node2.getPredecessorId());
-  REQUIRE(node2.getPredecessorId() == node.getSuccessorId());
+  auto simNode0 = networkSimulator.addNode("200.178.0.1");
+
+  ConnectionManagerFactory factory0 = [&simNode0] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  {
+    return std::make_unique<MockConnectionManager>(nodeId, simNode0);
+  };
+
+  ChordNode node{"200.178.0.1", 0, factory0};
+
+  // Create another node and join the network that is currently formed by the first node
+  auto simNode1 = networkSimulator.addNode("200.178.0.5");
+
+  ConnectionManagerFactory factory1 = [&simNode1] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  {
+    return std::make_unique<MockConnectionManager>(nodeId, simNode1);
+  };
+
+  ChordNode node1{"200.178.0.5", 0, factory1};
+
+  node1.join("200.178.0.1");
+
+  REQUIRE(node.getSuccessorId() == node1.getPredecessorId());
+  REQUIRE(node1.getPredecessorId() == node.getSuccessorId());
 }
 
 TEST_CASE("Chord messaging test")

@@ -9,25 +9,32 @@
 
 namespace chord {
 
+class ConnectionManager_I
+{
+  public:
+    virtual ~ConnectionManager_I() {}
+    virtual bool send(const NodeId& nodeId, const Message& message) = 0;
+    virtual void registerReceiveHandler(tcp::OnReceiveCallback callback) = 0;
+    virtual void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) = 0;
+    virtual void remove(const NodeId& id) = 0;
+};
+
 /*
  * The ConnectionManager is used for managing the external network connection that this not has to
  * other nodes. The concrete production version will contain a tcp server and multip tcp clients.
- *
- * Eventually this sill be derived from a virtual interface that can be mocked using the network
- * simulation code.
  */
-class ConnectionManager
+class ConnectionManager : public ConnectionManager_I
 {
   public:
     ConnectionManager(const NodeId& nodeId, uint32_t ip, uint16_t port);
 
-    bool send(const NodeId& nodeId, const Message& message);
+    bool send(const NodeId& nodeId, const Message& message) override;
 
-    void registerReceiveHandler(tcp::OnReceiveCallback callback);
+    void registerReceiveHandler(tcp::OnReceiveCallback callback) override;
 
-    void insert(const NodeId& id, uint32_t ipAddress, uint16_t port);
+    void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override;
 
-    void remove(const NodeId& id);
+    void remove(const NodeId& id) override;
 
   private:
 

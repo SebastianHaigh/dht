@@ -11,6 +11,13 @@ EncodedMessage::EncodedMessage(std::size_t requiredLength)
 {
 }
 
+EncodedMessage::EncodedMessage(uint8_t* message, std::size_t messageLength)
+  : m_message(new uint8_t[messageLength]),
+    m_length(messageLength)
+{
+  memcpy(m_message, message, m_length);
+}
+
 EncodedMessage::~EncodedMessage()
 {
   delete[] m_message;

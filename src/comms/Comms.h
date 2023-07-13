@@ -57,6 +57,7 @@ class EncodedMessage
 {
   public:
     explicit EncodedMessage(std::size_t requiredLength);
+    EncodedMessage(uint8_t* message, std::size_t messageLength);
     ~EncodedMessage();
 
     EncodedMessage(const EncodedMessage&) = delete;

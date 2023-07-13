@@ -47,10 +47,11 @@ class MockConnectionManager : public ConnectionManager_I
 
     void registerReceiveHandler(tcp::OnReceiveCallback callback) override
     {
-      // TODO (haigh) Is this the right thing to do with this callback?
-      NodeReceiveHandler handler = [callback] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
+      m_onReceive = callback;
+
+      NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
       {
-        callback(message, messageLength);
+        m_onReceive(message, messageLength);
       };
 
       m_simulatedNode.registerReceiveHandler(handler);

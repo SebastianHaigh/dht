@@ -79,6 +79,13 @@ const NodeId &ChordNode::getSuccessorId()
   return m_successor;
 }
 
+void ChordNode::receive(uint8_t* message, std::size_t messageLength)
+{
+  EncodedMessage encoded{message, messageLength};
+
+  handleReceivedMessage(encoded);
+}
+
 void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 {
   if (message.queryNodeId() < m_id && message.queryNodeId() > m_predecessor)

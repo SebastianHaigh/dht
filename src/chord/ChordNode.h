@@ -29,6 +29,7 @@ class ChordNode
     const NodeId& getSuccessorId();
 
     const NodeId& closestPrecedingFinger(const NodeId& id);
+    void receive(uint8_t* message, std::size_t messageLength);
 
   private:
 

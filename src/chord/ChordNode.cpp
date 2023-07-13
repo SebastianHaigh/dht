@@ -1,5 +1,6 @@
 #include "ChordNode.h"
 #include "ChordMessaging.h"
+#include "../comms/CommsCoder.h"
 
 #include <algorithm>
 #include <arpa/inet.h>
@@ -178,9 +179,10 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
   // Ignore comms version for now, this will probably be handled differently at a later time
 
   // get the message type, which is a uint32_t starting at encoded.message[2]
-  auto* type = reinterpret_cast<MessageType*>(&encoded.m_message[2]);
+  uint32_t type;
+  decodeSingleValue(&encoded.m_message[2], &type);
 
-  switch (*type)
+  switch (static_cast<MessageType>(type))
   {
     case MessageType::CHORD_FIND_SUCCESSOR:
     {

@@ -18,6 +18,12 @@ ChordNode::ChordNode(const std::string& ip,
     m_port{port},
     m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
 {
+  tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
+  {
+    receive(message, messageLength);
+  };
+
+  m_connectionManager->registerReceiveHandler(onReceiveCallback);
 }
 
 NodeId ChordNode::createNodeId(const std::string& ipAddress)

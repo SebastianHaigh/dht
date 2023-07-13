@@ -32,12 +32,19 @@ constexpr void swapEndian64(uint64_t* value)
   *value = (toSwap << 32) | (toSwap >> 32);
 }
 
+constexpr void swapEndianAny(uint8_t* firstByte, uint8_t* lastByte)
+{
+  while (firstByte < lastByte)
+  {
+    std::swap(*firstByte, *lastByte);
+    firstByte++;
+    lastByte--;
+  }
+}
+
 template<typename T>
 void swapEndian(T* value)
 {
-  static_assert((sizeof(T) == 1) || (sizeof(T) == 2) || (sizeof(T) == 4) || (sizeof(T) == 8),
-                "Cannot swap endian for this value size, must be 1, 2, 4, or 8 bytes");
-
   if constexpr (sizeof(T) == 1)
   {
     swapEndian8(value);
@@ -54,13 +61,18 @@ void swapEndian(T* value)
   {
     swapEndian64(value);
   }
+  else
+  {
+    auto* firstByte = reinterpret_cast<uint8_t*>(value);
+
+    swapEndianAny(firstByte,
+                  firstByte + sizeof(T) - 1);
+  }
 }
 
 template<typename T>
 void encodeSingleValue(const T* toEncode, uint8_t* encoded)
 {
-  static_assert(sizeof(T) <= 8, "Single value must be less than 8 bytes to encode");
-
   *reinterpret_cast<T*>(encoded) = *toEncode;
 
   if constexpr (std::endian::native == std::endian::little)
@@ -72,8 +84,6 @@ void encodeSingleValue(const T* toEncode, uint8_t* encoded)
 template<typename T>
 void decodeSingleValue(uint8_t* toDecode, T* decoded)
 {
-  static_assert(sizeof(T) <= 8, "Single value must be less than 8 bytes to decode");
-
   *decoded = *reinterpret_cast<T*>(toDecode);
 
   if constexpr (std::endian::native == std::endian::little)
@@ -81,5 +91,6 @@ void decodeSingleValue(uint8_t* toDecode, T* decoded)
     swapEndian(reinterpret_cast<T*>(decoded));
   }
 }
+
 
 #endif // COMMS_CODER_H_

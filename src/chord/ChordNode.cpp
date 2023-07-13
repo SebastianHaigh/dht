@@ -1,19 +1,29 @@
 #include "ChordNode.h"
+#include "ChordMessaging.h"
+#include "../comms/CommsCoder.h"
 
 #include <algorithm>
 #include <arpa/inet.h>
 
 namespace chord {
 
-ChordNode::ChordNode(const std::string& ip, uint16_t port)
+ChordNode::ChordNode(const std::string& ip,
+                     uint16_t port,
+                     const ConnectionManagerFactory& connectionManagerFactory)
   : m_id(createNodeId(ip)),
     m_predecessor{},
     m_successor{},
     m_fingerTable(m_id),
     m_ipAddress{convertIpAddressToInteger(ip)},
     m_port{port},
-    m_tcpServer{ip, port}
+    m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
 {
+  tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
+  {
+    receive(message, messageLength);
+  };
+
+  m_connectionManager->registerReceiveHandler(onReceiveCallback);
 }
 
 NodeId ChordNode::createNodeId(const std::string& ipAddress)
@@ -31,32 +41,38 @@ uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
   return sa.sin_addr.s_addr;
 }
 
-
 void ChordNode::join(const std::string &knownNodeIpAddress)
 {
   // The first thing we need to do is create a TcpClient in order to establish a connection to this node
-  hashing::SHA1Hash digest;
-  hashing::sha1((uint8_t*) knownNodeIpAddress.c_str(), knownNodeIpAddress.length(), digest);
+  auto ip = convertIpAddressToInteger(knownNodeIpAddress);
 
-  // Create a NodeId from the digest
-  NodeId knownNodeId{ digest };
-
-  // Create a TcpClient to connect to the known node
-  NodeConnection nodeConnection{knownNodeId, knownNodeIpAddress, 5000};
+  // Create a NodeId from the ip address
+  NodeId knownNodeId{ ip };
 
   // Insert the node connection into the node connections vector in sorted order
-  auto it = std::lower_bound(m_nodeConnections.begin(), 
-                             m_nodeConnections.end(), 
-                             nodeConnection, 
-                             [] (const NodeConnection& lhs, const NodeConnection& rhs) 
-                             { 
-                               return lhs.m_id < rhs.m_id;
-                             });
-
-  m_nodeConnections.insert(it, std::move(nodeConnection));
+  m_connectionManager->insert(knownNodeId, ip, m_port);
 
   // Send a request to the known node to find the successor of this node
-  sendFindSuccessorRequest(m_id);
+  auto requestId = getNextAvailableRequestId();
+
+  PendingMessageResponse pending;
+  pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
+  pending.m_nodeId = knownNodeId;
+  pending.m_hasChain = false;
+
+  m_pendingResponses.emplace(requestId, pending);
+
+  std::promise<NodeId> findSuccessorPromise;
+  std::future<NodeId> findSuccessorFuture = findSuccessorPromise.get_future();
+
+  m_findSuccessorPromises.emplace(requestId, std::move(findSuccessorPromise));
+
+  FindSuccessorMessage message{ CommsVersion::V1, m_id, m_id, requestId };
+
+  m_connectionManager->send(knownNodeId, message);
+
+  // We are going to wait here until we get a response
+  m_successor = findSuccessorFuture.get();
 }
 
 const NodeId &ChordNode::getPredecessorId()
@@ -69,28 +85,81 @@ const NodeId &ChordNode::getSuccessorId()
   return m_successor;
 }
 
-std::future<NodeId> ChordNode::findSuccessor(const NodeId &id)
+void ChordNode::receive(uint8_t* message, std::size_t messageLength)
 {
-  std::function<NodeId()> taskFn = [this, id] () -> NodeId { return doFindSuccessor(id); }; 
-  return m_threadPool.post(taskFn);
+  EncodedMessage encoded{message, messageLength};
+
+  handleReceivedMessage(encoded);
 }
 
-NodeId ChordNode::doFindSuccessor(const NodeId &id)
+void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 {
-  if (id < m_id && id > m_predecessor)
+  if (message.queryNodeId() < m_id && message.queryNodeId() > m_predecessor)
   {
-    auto nodeId = closestPrecedingFinger(id);
-    
+    auto nodeId = closestPrecedingFinger(message.queryNodeId());
+
     if (nodeId == m_id)
     {
-      return m_successor;
+      // If this is the case then we can start returning 
+      FindSuccessorResponseMessage response{ CommsVersion::V1, m_id, m_id, message.requestId() };
+
+      m_connectionManager->send(message.sourceNodeId(), response);
     }
 
-    sendFindPredecessorRequest(nodeId);
+    auto requestId = getNextAvailableRequestId();
+
+    PendingMessageResponse pending;
+    pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
+    pending.m_nodeId = nodeId;
+    pending.m_hasChain = true;
+    pending.m_chainingDestination = message.sourceNodeId();
+
+    m_pendingResponses.emplace(requestId, pending);
+
+    FindSuccessorMessage messageToForward{ CommsVersion::V1, message.queryNodeId(), m_id, requestId };
+
+    m_connectionManager->send(nodeId, messageToForward);
   }
 
-  return m_successor;
+}
 
+void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& message)
+{
+  auto it = m_pendingResponses.find(message.requestId());
+
+  if (it == m_pendingResponses.end())
+  {
+    std::cout << "Unexpected find successor response from node: " << message.sourceNodeId().toString() << std::endl;
+    return;
+  }
+
+  if (it->second.m_hasChain)
+  {
+    // This message is not for us, forward it on
+    FindSuccessorResponseMessage messageToForward{ CommsVersion::V1,
+                                                   message.nodeId(),
+                                                   m_id,
+                                                   message.requestId() };
+
+    m_connectionManager->send(it->second.m_chainingDestination, messageToForward);
+
+    m_pendingResponses.erase(it);
+
+    return;
+  }
+
+  // This message is for us, there should be a promise waiting for the result
+  auto promiseIter = m_findSuccessorPromises.find(message.requestId());
+
+  if (promiseIter == m_findSuccessorPromises.end())
+  {
+    std::cout << "Expected promise, but there wasn't one" << std::endl;
+    return;
+  }
+
+  promiseIter->second.set_value(message.nodeId());
+
+  m_findSuccessorPromises.erase(promiseIter);
 }
 
 const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
@@ -113,89 +182,65 @@ void ChordNode::initialiseFingerTable()
   }
 }
 
-void ChordNode::updateOthers()
-{
-
-}
-
 void ChordNode::updateFingerTable(const ChordNode &node, uint16_t i)
 {
   
 }
 
-void ChordNode::sendFindSuccessorRequest(const NodeId &id)
+void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 {
-  auto nodeConnection = std::lower_bound(m_nodeConnections.begin(), 
-                                         m_nodeConnections.end(), 
-                                         id,
-                                         [](const NodeConnection& lhs, const NodeId& rhs) 
-                                         { 
-                                           return lhs.m_id < rhs;
-                                         });
+  // Ignore comms version for now, this will probably be handled differently at a later time
 
-  if (nodeConnection != m_nodeConnections.end())
+  // get the message type, which is a uint32_t starting at encoded.message[2]
+  uint32_t type;
+  decodeSingleValue(&encoded.m_message[2], &type);
+
+  switch (static_cast<MessageType>(type))
   {
-    InterNodeRequest request{ InterNodeRequest::Type::FIND_SUCCESSOR_REQUEST,
-                              m_id, 
-                              id,
-                              m_ipAddress,
-                              m_port };
-
-    uint8_t requestBuffer[48];
-    request.toBuffer(requestBuffer, 48);
-    nodeConnection->m_tcpClient->send(requestBuffer, 48);
-  }
-}
-
-void ChordNode::sendFindPredecessorRequest(const NodeId &id)
-{
-  auto nodeConnection = std::lower_bound(m_nodeConnections.begin(), 
-                                         m_nodeConnections.end(), 
-                                         id,
-                                         [](const NodeConnection& lhs, const NodeId& rhs) 
-                                         { 
-                                           return lhs.m_id < rhs;
-                                         });
-
-  if (nodeConnection != m_nodeConnections.end())
-  {
-    InterNodeRequest request{ InterNodeRequest::Type::FIND_PREDECESSOR_REQUEST,
-                              m_id, 
-                              id, 
-                              m_ipAddress,
-                              m_port };
-
-    uint8_t requestBuffer[48];
-    request.toBuffer(requestBuffer, 48);
-    nodeConnection->m_tcpClient->send(requestBuffer, 48);
-  }
-}
-
-void ChordNode::processReceivedMessage(const InterNodeRequest& request)
-{
-  switch (request.m_type)
-  {
-    case InterNodeRequest::Type::FIND_SUCCESSOR_REQUEST:
+    case MessageType::CHORD_FIND_SUCCESSOR:
     {
+      FindSuccessorMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      doFindSuccessor(message);
       break;
     }
-    case InterNodeRequest::Type::FIND_SUCCESSOR_RESPONSE:
+
+    case MessageType::CHORD_FIND_SUCCESSOR_RESPONSE:
     {
-     break;
-    }
-    case InterNodeRequest::Type::FIND_PREDECESSOR_REQUEST:
-    {
+      FindSuccessorResponseMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      handleFindSuccessorResponse(message);
       break;
     }
-    case InterNodeRequest::Type::FIND_PREDECESSOR_RESPONSE:
-    {
-      break;
-    }
+
     default:
     {
-      break;
+      // This should probably be logged
     }
   }
+}
+
+uint32_t ChordNode::getNextAvailableRequestId()
+{
+  // Zero is a null value for requestId, so always skip it
+  if (m_requestIdCounter == 0) m_requestIdCounter++;
+
+  auto it = m_pendingResponses.find(m_requestIdCounter);
+
+  if (it == m_pendingResponses.end()) return m_requestIdCounter++;
+
+  while (it != m_pendingResponses.end())
+  {
+    it = m_pendingResponses.find(m_requestIdCounter);
+    if (it == m_pendingResponses.end()) return m_requestIdCounter++;
+  }
+
+  // should never get here, but this return statement suppresses a compiler warning
+  return 0;
 }
 
 } // namespace chord

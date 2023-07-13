@@ -1,5 +1,6 @@
 #include "NetworkSimulation.h"
 
+#include <arpa/inet.h>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -11,6 +12,20 @@ NetworkSimulator::NetworkSimulator()
 
 void NetworkSimulator::run()
 {
+}
+
+SimulatedNode& NetworkSimulator::addNode(const std::string& ipAddress)
+{
+  uint32_t ip_int{0};
+  inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
+  return addNode(ip_int);
+}
+
+SimulatedNode& NetworkSimulator::addNode(const std::string& ipAddress, NodeReceiveHandler receiveHandler)
+{
+  uint32_t ip_int{0};
+  inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
+  return addNode(ip_int, std::move(receiveHandler));
 }
 
 SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress)
@@ -129,7 +144,7 @@ void NetworkSimulator::removeAllLinksForNode(int nodeId)
   }
 }
 
-SimulatedNode::SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCallback)
+SimulatedNode::SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback)
   : m_nodeId(nodeId),
     m_ipAddress(ipAddress),
     m_onSendCallback(std::move(onSendCallback))
@@ -137,7 +152,7 @@ SimulatedNode::SimulatedNode(int nodeId, int ipAddress, OnSendCallback onSendCal
 }
 
 SimulatedNode::SimulatedNode(int nodeId,
-                             int ipAddress,
+                             uint32_t ipAddress,
                              OnSendCallback onSendCallback,
                              NodeReceiveHandler receiveHandler)
   : m_nodeId(nodeId),

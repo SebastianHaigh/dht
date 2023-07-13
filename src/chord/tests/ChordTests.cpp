@@ -6,9 +6,82 @@
 #include <bit>
 
 #include "../ChordNode.h"
+#include "../ChordMessaging.h"
 #include "../NodeId.h"
+#include "../../networkSimulation/NetworkSimulation.h"
+
 
 namespace chord { namespace test {
+
+class MockConnectionManager : public ConnectionManager_I
+{
+  public:
+    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node)
+      : m_nodeId(nodeId),
+        m_simulatedNode(node)
+    {
+    }
+
+    bool send(const NodeId& nodeId, const Message& message) override
+    {
+      uint32_t ip{ 0 };
+      bool foundNode{ false };
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        if (idIpPair.first == nodeId)
+        {
+          ip = idIpPair.second;
+          foundNode = true;
+          break;
+        }
+      }
+
+      if (not foundNode) return false;
+
+      auto encoded = message.encode();
+
+      m_simulatedNode.sendMessage(ip, encoded.m_message, encoded.m_length);
+
+      return true;
+    }
+
+    void registerReceiveHandler(tcp::OnReceiveCallback callback) override
+    {
+      m_onReceive = callback;
+
+      NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
+      {
+        m_onReceive(message, messageLength);
+      };
+
+      m_simulatedNode.registerReceiveHandler(handler);
+    }
+
+    void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override
+    {
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        // There is already a connection to this node
+        if (idIpPair.first == id) return;
+      }
+
+      m_nodeIdToIp.emplace_back(id, ipAddress);
+
+    }
+
+    void remove(const NodeId& id) override
+    {
+    }
+
+  private:
+    NodeId m_nodeId;
+    SimulatedNode& m_simulatedNode;
+
+    std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
+
+    tcp::OnReceiveCallback m_onReceive;
+};
+
 class Timer {
   private:
     std::chrono::time_point<std::chrono::high_resolution_clock> start_timepoint;
@@ -36,35 +109,6 @@ class Timer {
     }
 };
 
-TEST_CASE("Check the speed of the addition")
-{
-
-  if (std::endian::native == std::endian::little)
-  std::cout << "little endian" << std::endl;
-  else
-    std::cout << "not little" << std::endl;
-
-  uint32_t hashvals[5] = { 0xFFFFFFFF, 
-                           0xFFFFFFFF, 
-                           0xFFFFFFFF,
-                           0xFFFFFFFF, 
-                           0xFFFFFFFF };
-  NodeId largeNodeId{ hashvals };
-  NodeId anotherNodeId{ hashing::SHA1Hash{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF } };
-  {
-    Timer timer;
-    for (int i = 0; i < 220000; i++)
-    {
-      auto node = largeNodeId + anotherNodeId;
-    }
-  }
-
-  REQUIRE(false);
-}
-
 TEST_CASE("Test the creation of a node id")
 {
   NodeId twoToTheZero = NodeId::powerOfTwo(0);
@@ -77,16 +121,6 @@ TEST_CASE("Test the creation of a node id")
   NodeId twoToTheSeven = NodeId::powerOfTwo(7);
   NodeId twoToTheEight = NodeId::powerOfTwo(8);
 
-  std::vector<NodeId> nodeIds = { NodeId::powerOfTwo(0),
-                                  NodeId::powerOfTwo(1),
-                                  NodeId::powerOfTwo(2),
-                                  NodeId::powerOfTwo(3),
-                                  NodeId::powerOfTwo(4),
-                                  NodeId::powerOfTwo(5),
-                                  NodeId::powerOfTwo(6),
-                                  NodeId::powerOfTwo(7),
-                                  NodeId::powerOfTwo(8) };
-
   hashing::SHA1Hash twoToTheZeroHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1 };
   hashing::SHA1Hash twoToTheOneHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x2 };
   hashing::SHA1Hash twoToTheTwoHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x4 };
@@ -96,24 +130,6 @@ TEST_CASE("Test the creation of a node id")
   hashing::SHA1Hash twoToTheSixHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x40 };
   hashing::SHA1Hash twoToTheSevenHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x80 };
   hashing::SHA1Hash twoToTheEightHash = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1, 0 };
-
-  std::vector<unsigned char*> hashes{ &twoToTheZeroHash[0], 
-                                        &twoToTheOneHash[0], 
-                                         &twoToTheTwoHash[0],
-                                         &twoToTheThreeHash[0],
-                                         &twoToTheFourHash[0],
-                                         &twoToTheFiveHash[0],
-                                         &twoToTheSixHash[0],
-                                         &twoToTheSevenHash[0],
-                                         &twoToTheEightHash[0] };
-
-  int counter{ 0 };
-  for (auto& hash : hashes)
-  {
-    std::cout << std::dec << counter << ": " << nodeIds[counter].toString() << ", hash version " << NodeId{hash}.toString() << std::endl;
-    counter++;
-  } 
-
 
   REQUIRE(twoToTheZero == NodeId{twoToTheZeroHash});
   REQUIRE(twoToTheOne == NodeId{twoToTheOneHash});
@@ -125,56 +141,68 @@ TEST_CASE("Test the creation of a node id")
   REQUIRE(twoToTheSeven == NodeId(twoToTheSevenHash));
   REQUIRE(twoToTheEight == NodeId(twoToTheEightHash));
 
-  // Large number addition
-  hashing::SHA1Hash largeHashValue = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                       0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
-
-  
-  NodeId largeNodeId{ hashing::SHA1Hash{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                         0xFF, 0xFF, 0xFF, 0xFF, 0xFF } };
-  NodeId anotherNodeId{ hashing::SHA1Hash{ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                           0xFF, 0xFF, 0xFF, 0xFF, 0xFF } };
-
-  uint16_t toBeAddedTo = 0xFFFF;
-  uint16_t toAdd = 0xFFFF;
-  uint16_t theSum = toBeAddedTo + toAdd;
-
-  std::cout << std::hex << toBeAddedTo << " + " << std::dec << toAdd << " = " << std::hex << theSum << std::endl;
-
-  for (int i = 0; i < 5000; i++)
-  {
-    std::cout << largeNodeId.toString() << std::endl;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds{500});
-    largeNodeId = largeNodeId + anotherNodeId;
-  }
-
-  
-  
-  
 }
 
-TEST_CASE("Test the creation of a chord node")
+TEST_CASE("Add some more node ids")
 {
-  std::cout << "Create first node" << std::endl;
-  ChordNode node{"200.178.0.1", 0};
-  
-  // Create another node and join the network that is currently formed by the first node
-  
-  std::cout << "Create second node" << std::endl;
-  ChordNode node2{"200.178.0.5", 0};
+  NodeId nodeId_0, nodeId_1, expected;
 
-  std::cout << "Join second node to first node" << std::endl;
-  node2.join("200.178.0.1");
-  
-  REQUIRE(node.getSuccessorId() == node2.getPredecessorId());
-  REQUIRE(node2.getPredecessorId() == node.getSuccessorId());
+  SECTION("Case 1")
+  {
+    nodeId_0 = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+    nodeId_1 = NodeId{ "00000000-00000100-00000000-00000000-00000000" };
+    expected = NodeId{ "00000000-000000FF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+  }
+
+  SECTION("Case 2")
+  {
+    nodeId_0 = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+    nodeId_1 = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF" };
+    expected = NodeId{ "FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFE" };
+  }
+
+  auto result = nodeId_0 + nodeId_1;
+
+  REQUIRE(result == expected);
+}
+
+TEST_CASE("Test the creation of a chord node", "[.tdd]")
+{
+  NetworkSimulator networkSimulator;
+
+  ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  {
+    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
+  };
+
+  ChordNode node{"200.178.0.1", 0, factory};
+
+  // Create another node and join the network that is currently formed by the first node
+
+  ChordNode node1{"200.178.0.5", 0, factory};
+
+  node1.join("200.178.0.1");
+
+  REQUIRE(node.getSuccessorId() == node1.getPredecessorId());
+  REQUIRE(node1.getPredecessorId() == node.getSuccessorId());
+}
+
+TEST_CASE("Chord messaging test")
+{
+  NodeId nodeId { "12345678-abcdabcd-effeeffe-dcbadcba-87654321" };
+  NodeId sourceNodeId { "87654321-abcdabcd-eff00ffe-dcbadcba-12345678" };
+
+  FindSuccessorMessage message{CommsVersion::V1, nodeId, sourceNodeId, 3987};
+
+  EncodedMessage encoded = message.encode();
+
+  FindSuccessorMessage decodedMessage{CommsVersion::V1};
+
+  decodedMessage.decode(encoded);
+
+  REQUIRE(decodedMessage.queryNodeId() == nodeId);
+  REQUIRE(decodedMessage.sourceNodeId() == sourceNodeId);
+  REQUIRE(decodedMessage.requestId() == 3987);
 }
 
 }} // namespace chord::test

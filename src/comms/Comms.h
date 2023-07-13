@@ -40,16 +40,24 @@ enum class CommsVersion : uint16_t
 
 enum class MessageType : uint32_t
 {
-  JOIN              = 0x00000001,
-  JOIN_RESPONSE     = 0x00000002,
+  JOIN                           = 0x00000001,
+  JOIN_RESPONSE                  = 0x00000002,
 
-  POSITION          = 0x00000101,
+  POSITION                       = 0x00000101,
+
+  CHORD_FIND_SUCCESSOR           = 0x00000201,
+  CHORD_FIND_SUCCESSOR_RESPONSE  = 0x00000202,
+  CHORD_STABILISE                = 0x00000203,
+  CHORD_NOTIFY                   = 0x00000204,
+  CHORD_FIX_FINGERS              = 0x00000205,
+  CHORD_CHECK_PREDECESSOR        = 0x00000206,
 };
 
 class EncodedMessage
 {
   public:
     explicit EncodedMessage(std::size_t requiredLength);
+    EncodedMessage(uint8_t* message, std::size_t messageLength);
     ~EncodedMessage();
 
     EncodedMessage(const EncodedMessage&) = delete;
@@ -66,7 +74,6 @@ class Message
 {
   public:
     Message(CommsVersion version, MessageType type, std::size_t payloadLength);
-    Message(CommsVersion version, MessageType type);
     virtual ~Message() = default;
 
     [[nodiscard]] const MessageType& type() const;

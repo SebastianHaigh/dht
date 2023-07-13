@@ -4,7 +4,15 @@ set(CMAKE_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Catch2 3 REQUIRED)
+Include(FetchContent)
+
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG        v3.0.1
+)
+
+FetchContent_MakeAvailable(Catch2)
 
 add_subdirectory(src)
 

@@ -166,28 +166,20 @@ TEST_CASE("Add some more node ids")
   REQUIRE(result == expected);
 }
 
-TEST_CASE("Test the creation of a chord node")
+TEST_CASE("Test the creation of a chord node", "[.tdd]")
 {
   NetworkSimulator networkSimulator;
 
-  auto simNode0 = networkSimulator.addNode("200.178.0.1");
-
-  ConnectionManagerFactory factory0 = [&simNode0] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, simNode0);
+    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
   };
 
-  ChordNode node{"200.178.0.1", 0, factory0};
+  ChordNode node{"200.178.0.1", 0, factory};
 
   // Create another node and join the network that is currently formed by the first node
-  auto simNode1 = networkSimulator.addNode("200.178.0.5");
 
-  ConnectionManagerFactory factory1 = [&simNode1] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
-  {
-    return std::make_unique<MockConnectionManager>(nodeId, simNode1);
-  };
-
-  ChordNode node1{"200.178.0.5", 0, factory1};
+  ChordNode node1{"200.178.0.5", 0, factory};
 
   node1.join("200.178.0.1");
 

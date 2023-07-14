@@ -98,34 +98,38 @@ class JoinMessage : public Message
 {
   public:
     explicit JoinMessage(CommsVersion version);
-    JoinMessage(CommsVersion version, uint32_t ip);
+    JoinMessage(CommsVersion version, uint32_t ip, uint32_t requestId);
     ~JoinMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;
+    [[nodiscard]] uint32_t requestId() const;
 
   private:
 
     uint32_t m_ip;
+    uint32_t m_requestId;
 };
 
 class JoinResponseMessage : public Message
 {
   public:
     explicit JoinResponseMessage(CommsVersion version);
-    JoinResponseMessage(CommsVersion version, uint32_t ip);
+    JoinResponseMessage(CommsVersion version, uint32_t ip, uint32_t requestId);
     ~JoinResponseMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
     void decode(const EncodedMessage& message) override;
 
     [[nodiscard]] uint32_t ip() const;
+    [[nodiscard]] uint32_t requestId() const;
 
   private:
 
     uint32_t m_ip;
+    uint32_t m_requestId;
 };
 
 class PositionMessage : public Message

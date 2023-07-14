@@ -3,7 +3,7 @@
 
 TEST_CASE("Join Message can be encoded and decoded")
 {
-  JoinMessage message{ CommsVersion::V1, 0x67000001 };
+  JoinMessage message{ CommsVersion::V1, 0x67000001, 0 };
 
   EncodedMessage encoded = message.encode();
 

@@ -73,6 +73,11 @@ class MockConnectionManager : public ConnectionManager_I
     {
     }
 
+    [[nodiscard]] uint32_t ip() const override
+    {
+      return m_simulatedNode.ip();
+    }
+
   private:
     NodeId m_nodeId;
     SimulatedNode& m_simulatedNode;

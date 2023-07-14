@@ -19,7 +19,8 @@ class SimulatedNode {
     SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback, NodeReceiveHandler receiveHandler);
     virtual ~SimulatedNode() = default;
     void run();
-    int nodeId() const;
+    [[nodiscard]] int nodeId() const;
+    [[nodiscard]] uint32_t ip() const;
 
     void registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler);
 

@@ -183,9 +183,14 @@ void SimulatedNode::sendMessage(uint32_t destinationIpAddress,
   m_onSendCallback(m_ipAddress, destinationIpAddress, message, messageLength);
 }
 
-int SimulatedNode::nodeId() const
+[[nodiscard]] int SimulatedNode::nodeId() const
 {
   return m_nodeId;
+}
+
+[[nodiscard]] uint32_t SimulatedNode::ip() const
+{
+  return m_ipAddress;
 }
 
 SimulatedLink::SimulatedLink(const SimulatedNode* node1, const SimulatedNode* node2)

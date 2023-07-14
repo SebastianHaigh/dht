@@ -2,6 +2,7 @@
 
 #include <arpa/inet.h>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -92,13 +93,13 @@ SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHandler 
 
   if (m_nodes.size() == 1) return *m_nodes.back();
 
-  // TODO (haigh) Is there any point in having links? I am not using them right now but it could be 
+  // TODO (haigh) Is there any point in having links? I am not using them right now but it could be
   //   good in the future if I want to test breaking a like between specific nodes, or simulating
   //   different latency between different nodes (eg. due to greater geographical distance etc)
-  
-  // TODO (haigh) Links can be held in an unordered map using a uint64_t as key. The ipAddress 
+
+  // TODO (haigh) Links can be held in an unordered map using a uint64_t as key. The ipAddress
   // of each node can be shifted and OR'd together to form a link ID
-  
+
   for (const auto& node : m_nodes)
   {
     if (node->nodeId() != m_nodeIds.back())
@@ -119,6 +120,8 @@ void NetworkSimulator::sendMessage(uint32_t sourceIpAddress,
   auto nodeIp_p = m_nodeIdLookup.find(destinationIpAddress);
 
   if (nodeIp_p == m_nodeIdLookup.end()) return;
+
+  std::cout << "found node ip" << std::endl;
 
   for (auto& node : m_nodes)
   {
@@ -149,6 +152,7 @@ SimulatedNode::SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSe
     m_ipAddress(ipAddress),
     m_onSendCallback(std::move(onSendCallback))
 {
+  std::cout << "SimulatedNode: created without receive handler" << std::endl;
 }
 
 SimulatedNode::SimulatedNode(int nodeId,
@@ -160,6 +164,7 @@ SimulatedNode::SimulatedNode(int nodeId,
     m_onSendCallback(std::move(onSendCallback)),
     m_receiveHandler(std::move(receiveHandler))
 {
+  std::cout << "SimulatedNode: created with receive handler" << std::endl;
 }
 
 void SimulatedNode::run()
@@ -168,12 +173,19 @@ void SimulatedNode::run()
 
 void SimulatedNode::registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler)
 {
+  std::cout << "[" << nodeId() << "] SimulatedNode: receive handler registered" << std::endl;
   m_receiveHandler = std::move(nodeReceiveHandler);
 }
 
 void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
 {
-  m_receiveHandler(sourceIpAddress, message, messageLength);
+  std::cout << "[" << nodeId() << "] SimulatedNode: received message, calling handler" << std::endl;
+
+  if (m_receiveHandler)
+    m_receiveHandler(sourceIpAddress, message, messageLength);
+  else
+    std::cout << "[" << nodeId() << "] SimulatedNode: receive message failed, no handler" << std::endl;
+
 }
 
 void SimulatedNode::sendMessage(uint32_t destinationIpAddress,

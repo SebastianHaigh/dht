@@ -24,6 +24,7 @@ class MockConnectionManager : public ConnectionManager_I
 
     bool send(const NodeId& nodeId, const Message& message) override
     {
+      std::cout << "[" << m_nodeId.toString() <<  "] MockConnectionManager: sending message to " << nodeId.toString() << std::endl;
       uint32_t ip{ 0 };
       bool foundNode{ false };
       for (const auto& idIpPair : m_nodeIdToIp)
@@ -36,7 +37,16 @@ class MockConnectionManager : public ConnectionManager_I
         }
       }
 
-      if (not foundNode) return false;
+      if (not foundNode)
+      {
+        std::cout << "[" << m_nodeId.toString() <<  "] MockConnectionManager: could not find node " << nodeId.toString() << " failed to send message" << std::endl;
+        std::cout << "[" << m_nodeId.toString() <<  "] MockConnectionManager: I have the following " << m_nodeIdToIp.size() << " nodes: " << std::endl;
+        for (const auto& node : m_nodeIdToIp)
+        {
+          std::cout << "        " << node.first.toString() << std::endl;
+        }
+        return false;
+      }
 
       auto encoded = message.encode();
 

@@ -89,6 +89,7 @@ const NodeId &ChordNode::getSuccessorId()
 
 void ChordNode::receive(uint8_t* message, std::size_t messageLength)
 {
+  std::cout << "[" << m_id.toString() << "] ChordNode: receiving message" << std::endl;
   EncodedMessage encoded{message, messageLength};
 
   handleReceivedMessage(encoded);
@@ -96,33 +97,38 @@ void ChordNode::receive(uint8_t* message, std::size_t messageLength)
 
 void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 {
+  std::cout << "[" << m_id.toString() << "] ChordNode: finding successor for " << message.queryNodeId().toString() << std::endl;
+
   if (message.queryNodeId() < m_id && message.queryNodeId() > m_predecessor)
   {
-    auto nodeId = closestPrecedingFinger(message.queryNodeId());
+    std::cout << "[" << m_id.toString() << "] ChordNode: successor found for " << message.queryNodeId().toString() << std::endl;
 
-    if (nodeId == m_id)
-    {
-      // If this is the case then we can start returning 
-      FindSuccessorResponseMessage response{ CommsVersion::V1, m_id, m_id, message.requestId() };
+    // If this is the case then we can start returning 
+    FindSuccessorResponseMessage response{ CommsVersion::V1, m_successor, m_id, message.requestId() };
 
-      m_connectionManager->send(message.sourceNodeId(), response);
-    }
+    m_connectionManager->send(message.sourceNodeId(), response);
 
-    auto requestId = getNextAvailableRequestId();
-
-    PendingMessageResponse pending;
-    pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
-    pending.m_nodeId = nodeId;
-    pending.m_hasChain = true;
-    pending.m_chainingDestination = message.sourceNodeId();
-
-    m_pendingResponses.emplace(requestId, pending);
-
-    FindSuccessorMessage messageToForward{ CommsVersion::V1, message.queryNodeId(), m_id, requestId };
-
-    m_connectionManager->send(nodeId, messageToForward);
+    return;
   }
 
+  auto nodeId = closestPrecedingFinger(message.queryNodeId());
+
+  std::cout << "[" << m_id.toString() << "] ChordNode: could not find successor for " << message.queryNodeId().toString() << std::endl;
+  std::cout << "[" << m_id.toString() << "] ChordNode: forwarding message to " << nodeId.toString() << std::endl;
+
+  auto requestId = getNextAvailableRequestId();
+
+  PendingMessageResponse pending;
+  pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
+  pending.m_nodeId = nodeId;
+  pending.m_hasChain = true;
+  pending.m_chainingDestination = message.sourceNodeId();
+
+  m_pendingResponses.emplace(requestId, pending);
+
+  FindSuccessorMessage messageToForward{ CommsVersion::V1, message.queryNodeId(), m_id, requestId };
+
+  m_connectionManager->send(nodeId, messageToForward);
 }
 
 void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& message)
@@ -201,6 +207,7 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
   {
     case MessageType::CHORD_FIND_SUCCESSOR:
     {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received chord find successor request" << std::endl;
       FindSuccessorMessage message{ CommsVersion::V1 };
 
       message.decode(std::move(encoded));
@@ -211,6 +218,7 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
     case MessageType::CHORD_FIND_SUCCESSOR_RESPONSE:
     {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received chord find successor response" << std::endl;
       FindSuccessorResponseMessage message{ CommsVersion::V1 };
 
       message.decode(std::move(encoded));
@@ -221,6 +229,13 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
     default:
     {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received unknown message type: " << (int) type << std::endl;
+      for (int i = 0; i < encoded.m_length - 1; i++)
+      {
+        std::cout << std::hex << (uint32_t) encoded.m_message[i] << ", ";
+      }
+
+      std::cout << std::hex << encoded.m_message[encoded.m_length - 1] << std::endl;
       // This should probably be logged
     }
   }

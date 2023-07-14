@@ -73,4 +73,9 @@ std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
   return std::distance(m_nodeConnections.begin(), nodeConnection);
 }
 
+[[nodiscard]] uint32_t ConnectionManager::ip() const
+{
+  return m_localIpAddress;
+}
+
 }

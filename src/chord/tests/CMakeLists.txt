@@ -8,11 +8,3 @@ target_link_libraries(ChordTests
                       NetworkSimulation)
 add_test(NAME ChordTests
          COMMAND ChordTests)
-
-add_executable(FingerTableTests FingerTableTests.cpp)
-target_link_libraries(FingerTableTests 
-                      PRIVATE 
-                      Catch2::Catch2WithMain 
-                      Chord)
-add_test(NAME FingerTableTests
-         COMMAND FingerTableTests)

@@ -39,14 +39,21 @@ TEST_CASE("Create a finger table")
   };
 
   // Create a Node ID to serve as the local node for the finger table
-  NodeId local;
+  NodeId localNodeId{"00000000-00001020-a3e1f222-928d2a31-00000000"};
 
-  FingerTable table{local};
+  FingerTable table;
+
+  initialiseFingerTable(table, localNodeId);
 
   for (int i = 0; i < 160; i++)
   {
-    REQUIRE(table[i].m_interval.m_start == local + NodeId::powerOfTwo(i));
-    REQUIRE(table[i].m_interval.m_end == local + NodeId::powerOfTwo(i + 1));
+    std::cout << table.m_fingers[i].m_interval.m_start.toString() << " - " << table.m_fingers[i].m_interval.m_end.toString() << std::endl;
+  }
+
+  for (int i = 0; i < 160; i++)
+  {
+    REQUIRE(table.m_fingers[i].m_interval.m_start == localNodeId + NodeId::powerOfTwo(i));
+    REQUIRE(table.m_fingers[i].m_interval.m_end == localNodeId + NodeId::powerOfTwo(i + 1));
   }
 
   int counter = 0;
@@ -54,7 +61,7 @@ TEST_CASE("Create a finger table")
   {
     hashing::SHA1Hash hasher;
     hashing::fromString(intervalStart.c_str(), hasher);
-    REQUIRE(table[counter].m_interval.m_start == NodeId{hasher});
+    REQUIRE(table.m_fingers[counter].m_interval.m_start == NodeId{hasher});
     counter++;
   }
 }

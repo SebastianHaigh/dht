@@ -13,17 +13,19 @@ ChordNode::ChordNode(const std::string& ip,
   : m_id(createNodeId(ip)),
     m_predecessor{},
     m_successor{},
-    m_fingerTable(m_id),
     m_ipAddress{convertIpAddressToInteger(ip)},
     m_port{port},
     m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
 {
+  ::chord::initialiseFingerTable(m_fingerTable, m_id);
+
   tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
   {
     receive(message, messageLength);
   };
 
   m_connectionManager->registerReceiveHandler(onReceiveCallback);
+
 }
 
 NodeId ChordNode::createNodeId(const std::string& ipAddress)
@@ -166,9 +168,9 @@ const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
 {
   for (int i = 159; i >= 0; i--)
   {
-    if (m_fingerTable[i].m_nodeId > m_id && m_fingerTable[i].m_nodeId < id)
+    if (m_fingerTable.m_fingers[i].m_nodeId > m_id && m_fingerTable.m_fingers[i].m_nodeId < id)
     {
-      return m_fingerTable[i].m_nodeId;
+      return m_fingerTable.m_fingers[i].m_nodeId;
     }
   }
 

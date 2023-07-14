@@ -7,41 +7,20 @@
 
 namespace chord {
 
-struct FingerTableInterval
+struct FingerTableEntry
 {
   NodeId m_start;
   NodeId m_end;
-};
-
-struct FingerTableEntry
-{
-  FingerTableInterval m_interval;
   NodeId m_nodeId;
-  uint32_t m_ipAddress;
-  uint16_t m_port;
 };
 
-class FingerTable
+struct FingerTable
 {
-  public:
-    explicit FingerTable(const NodeId& localNodeId);
-
-    void addEntry(const NodeId& nodeId,
-                  const NodeId& start,
-                  const NodeId& end,
-                  const std::string& ipAddress,
-                  uint16_t port);
-
-    const FingerTableEntry &operator[](size_t index) const;
-    FingerTableEntry &operator[](size_t index);
-
-  private:
-    FingerTableInterval calculateIthInterval(int i) const;
-
-    std::array<FingerTableEntry, 160> m_entries;
-    NodeId m_localNodeId;
-    
+  std::array<FingerTableEntry, 160> m_fingers;
+  NodeId m_localNodeId;
 };
+
+void initialiseFingerTable(FingerTable& fingerTable, const NodeId& nodeId);
 
 } // namespace chord
 

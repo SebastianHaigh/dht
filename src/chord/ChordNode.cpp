@@ -10,10 +10,10 @@ namespace chord {
 ChordNode::ChordNode(const std::string& ip,
                      uint16_t port,
                      const ConnectionManagerFactory& connectionManagerFactory)
-  : m_id(createNodeId(ip)),
+  : m_ipAddress{convertIpAddressToInteger(ip)},
+    m_id(m_ipAddress),
     m_predecessor{},
     m_successor{},
-    m_ipAddress{convertIpAddressToInteger(ip)},
     m_port{port},
     m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
 {
@@ -26,14 +26,6 @@ ChordNode::ChordNode(const std::string& ip,
 
   m_connectionManager->registerReceiveHandler(onReceiveCallback);
 
-}
-
-NodeId ChordNode::createNodeId(const std::string& ipAddress)
-{
-  hashing::SHA1Hash digest;
-  hashing::sha1((uint8_t*) ipAddress.c_str(), ipAddress.length(), digest);
-
-  return NodeId{ digest };
 }
 
 uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)

@@ -181,7 +181,7 @@ TEST_CASE("Add some more node ids")
   REQUIRE(result == expected);
 }
 
-TEST_CASE("Test the creation of a chord node", "[.tdd]")
+TEST_CASE("Test the creation of a chord node")
 {
   NetworkSimulator networkSimulator;
 
@@ -190,7 +190,7 @@ TEST_CASE("Test the creation of a chord node", "[.tdd]")
     return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
   };
 
-  ChordNode node{"200.178.0.1", 0, factory};
+  ChordNode node0{"200.178.0.1", 0, factory};
 
   // Create another node and join the network that is currently formed by the first node
 
@@ -198,8 +198,8 @@ TEST_CASE("Test the creation of a chord node", "[.tdd]")
 
   node1.join("200.178.0.1");
 
-  REQUIRE(node.getSuccessorId() == node1.getPredecessorId());
-  REQUIRE(node1.getPredecessorId() == node.getSuccessorId());
+  REQUIRE(node0.getSuccessorId() == node1.getPredecessorId());
+  REQUIRE(node1.getPredecessorId() == node0.getSuccessorId());
 }
 
 TEST_CASE("Chord messaging test")

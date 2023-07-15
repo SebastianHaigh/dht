@@ -58,6 +58,20 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
   auto requestId = getNextAvailableRequestId();
 
   PendingMessageResponse pending;
+  pending.m_type = MessageType::JOIN_RESPONSE;
+  pending.m_nodeId = knownNodeId;
+  pending.m_hasChain = false;
+
+  m_pendingResponses.emplace(requestId, pending);
+
+  std::future<NodeId> joinFuture = m_joinPromise.get_future();
+
+  JoinMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip(), requestId };
+
+  m_connectionManager->send(knownNodeId, joinMessage);
+
+  joinFuture.wait();
+
   pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
   pending.m_nodeId = knownNodeId;
   pending.m_hasChain = false;
@@ -205,6 +219,26 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
   switch (static_cast<MessageType>(type))
   {
+    case MessageType::JOIN:
+    {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received join request" << std::endl;
+      JoinMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      handleJoinRequest(message);
+      break;
+    }
+    case MessageType::JOIN_RESPONSE:
+    {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received join response" << std::endl;
+      JoinResponseMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      handleJoinResponse(message);
+      break;
+    }
     case MessageType::CHORD_FIND_SUCCESSOR:
     {
       std::cout << "[" << m_id.toString() << "] ChordNode: received chord find successor request" << std::endl;
@@ -239,6 +273,23 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
       // This should probably be logged
     }
   }
+}
+
+void ChordNode::handleJoinRequest(const JoinMessage& message)
+{
+  // This should probably do some checks, but I'm not sure yet what is needed.
+  NodeId newNodeId{ message.ip() };
+
+  m_connectionManager->insert(newNodeId, message.ip(), 0);
+
+  JoinResponseMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip(), message.requestId() };
+
+  m_connectionManager->send(newNodeId, joinMessage);
+}
+
+void ChordNode::handleJoinResponse(const JoinResponseMessage& message)
+{
+  m_joinPromise.set_value(NodeId{ message.ip() });
 }
 
 uint32_t ChordNode::getNextAvailableRequestId()

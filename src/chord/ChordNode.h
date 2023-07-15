@@ -44,16 +44,15 @@ class ChordNode
     void handleJoinRequest(const JoinMessage& message);
     void handleJoinResponse(const JoinResponseMessage& message);
 
-    static NodeId createNodeId(const std::string& ipAddress);
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 
     uint32_t getNextAvailableRequestId();
 
+    const uint32_t m_ipAddress;
     NodeId m_id;
     NodeId m_predecessor;
     NodeId m_successor;
     FingerTable m_fingerTable;
-    const uint32_t m_ipAddress;
     const uint16_t m_port;
 
     std::unique_ptr<ConnectionManager_I> m_connectionManager;

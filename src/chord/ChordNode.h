@@ -41,6 +41,9 @@ class ChordNode
 
     void handleReceivedMessage(const EncodedMessage& encoded);
 
+    void handleJoinRequest(const JoinMessage& message);
+    void handleJoinResponse(const JoinResponseMessage& message);
+
     static NodeId createNodeId(const std::string& ipAddress);
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 
@@ -69,6 +72,7 @@ class ChordNode
 
     std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;
     std::unordered_map<uint32_t, std::promise<NodeId>> m_findSuccessorPromises;
+    std::promise<NodeId> m_joinPromise;
 };
 
 } // namespace chord

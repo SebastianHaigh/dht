@@ -44,6 +44,9 @@ class ChordNode
     void handleJoinRequest(const JoinMessage& message);
     void handleJoinResponse(const JoinResponseMessage& message);
 
+    std::future<NodeId> findSuccessor(const NodeId& hash);
+    std::future<NodeId> findSuccessor(const NodeId& nodeToQuery, const NodeId& hash);
+
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 
     uint32_t getNextAvailableRequestId();

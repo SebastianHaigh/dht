@@ -64,20 +64,7 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
 
   joinFuture.wait();
 
-  pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
-  pending.m_nodeId = knownNodeId;
-  pending.m_hasChain = false;
-
-  m_pendingResponses.emplace(requestId, pending);
-
-  std::promise<NodeId> findSuccessorPromise;
-  std::future<NodeId> findSuccessorFuture = findSuccessorPromise.get_future();
-
-  m_findSuccessorPromises.emplace(requestId, std::move(findSuccessorPromise));
-
-  FindSuccessorMessage message{ CommsVersion::V1, m_id, m_id, requestId };
-
-  m_connectionManager->send(knownNodeId, message);
+  std::future<NodeId> findSuccessorFuture = findSuccessor(knownNodeId, m_id);
 
   // We are going to wait here until we get a response
   m_successor = findSuccessorFuture.get();
@@ -174,6 +161,34 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
   promiseIter->second.set_value(message.nodeId());
 
   m_findSuccessorPromises.erase(promiseIter);
+}
+
+std::future<NodeId> ChordNode::findSuccessor(const NodeId& hash)
+{
+  return findSuccessor(closestPrecedingFinger(hash), hash);
+}
+
+std::future<NodeId> ChordNode::findSuccessor(const NodeId& nodeToQuery, const NodeId& hash)
+{
+  auto requestId = getNextAvailableRequestId();
+
+  PendingMessageResponse pending;
+  pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
+  pending.m_nodeId = hash;
+  pending.m_hasChain = false;
+
+  m_pendingResponses.emplace(requestId, pending);
+
+  std::promise<NodeId> findSuccessorPromise;
+  std::future<NodeId> findSuccessorFuture = findSuccessorPromise.get_future();
+
+  m_findSuccessorPromises.emplace(requestId, std::move(findSuccessorPromise));
+
+  FindSuccessorMessage message{ CommsVersion::V1, hash, m_id, requestId };
+
+  m_connectionManager->send(nodeToQuery, message);
+
+  return findSuccessorFuture;
 }
 
 const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)

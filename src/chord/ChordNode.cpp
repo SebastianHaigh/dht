@@ -68,6 +68,9 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
 
   // We are going to wait here until we get a response
   m_successor = findSuccessorFuture.get();
+
+  // After this we need to initialise the finger table by calling stabilise
+  stabilise();
 }
 
 const NodeId &ChordNode::getPredecessorId()
@@ -418,6 +421,20 @@ uint32_t ChordNode::getNextAvailableRequestId()
 
   // should never get here, but this return statement suppresses a compiler warning
   return 0;
+}
+
+void ChordNode::stabilise()
+{
+  std::future<Neighbours> successorNeighboursFuture = getNeighbours(m_successor);
+
+  Neighbours successorNeighbours = successorNeighboursFuture.get();
+
+  if (successorNeighbours.predecessor > m_id && successorNeighbours.predecessor < m_successor)
+  {
+    m_successor = successorNeighbours.predecessor;
+  }
+
+  notify(m_successor);
 }
 
 } // namespace chord

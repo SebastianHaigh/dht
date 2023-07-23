@@ -53,6 +53,52 @@ class FindSuccessorResponseMessage : public Message
     uint32_t m_requestId;
 };
 
+class GetNeighboursMessage : public Message
+{
+  public:
+    GetNeighboursMessage(CommsVersion version,
+                         const NodeId& sourceNodeId,
+                         uint32_t requestId);
+    explicit GetNeighboursMessage(CommsVersion version);
+    ~GetNeighboursMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] const NodeId& sourceNodeId() const;
+    [[nodiscard]] uint32_t requestId() const;
+
+  private:
+    NodeId m_sourceNodeId;
+    uint32_t m_requestId;
+};
+
+class GetNeighboursResponseMessage : public Message
+{
+  public:
+    GetNeighboursResponseMessage(CommsVersion version,
+                                 const NodeId& successor,
+                                 const NodeId& predecessor,
+                                 const NodeId& sourceNodeId,
+                                 uint32_t requestId);
+    explicit GetNeighboursResponseMessage(CommsVersion version);
+    ~GetNeighboursResponseMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] const NodeId& successor() const;
+    [[nodiscard]] const NodeId& predecessor() const;
+    [[nodiscard]] const NodeId& sourceNodeId() const;
+    [[nodiscard]] uint32_t requestId() const;
+
+  private:
+    NodeId m_successor;
+    NodeId m_predecessor;
+    NodeId m_sourceNodeId;
+    uint32_t m_requestId;
+};
+
 }
 
 #endif // CHORD_MESSAGING_H_

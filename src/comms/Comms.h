@@ -51,6 +51,8 @@ enum class MessageType : uint32_t
   CHORD_NOTIFY                   = 0x00000204,
   CHORD_FIX_FINGERS              = 0x00000205,
   CHORD_CHECK_PREDECESSOR        = 0x00000206,
+  CHORD_GET_NEIGHBOURS           = 0x00000207,
+  CHORD_GET_NEIGHBOURS_RESPONSE  = 0x00000208,
 };
 
 class EncodedMessage

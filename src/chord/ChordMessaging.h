@@ -53,6 +53,23 @@ class FindSuccessorResponseMessage : public Message
     uint32_t m_requestId;
 };
 
+class NotifyMessage : public Message
+{
+  public:
+    NotifyMessage(CommsVersion version,
+                  const NodeId& nodeId);
+    explicit NotifyMessage(CommsVersion version);
+    ~NotifyMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] const NodeId& nodeId() const;
+
+  private:
+    NodeId m_nodeId;
+};
+
 class GetNeighboursMessage : public Message
 {
   public:

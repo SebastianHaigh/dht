@@ -131,6 +131,45 @@ void FindSuccessorResponseMessage::decode(const EncodedMessage& message)
   return m_requestId;
 }
 
+NotifyMessage::NotifyMessage(CommsVersion version,
+                             const NodeId& nodeId)
+  : Message(version, MessageType::CHORD_NOTIFY, sizeof(NodeId)),
+    m_nodeId(nodeId)
+{
+}
+
+NotifyMessage::NotifyMessage(CommsVersion version)
+  : Message(version, MessageType::CHORD_NOTIFY, sizeof(NodeId))
+{
+}
+
+[[nodiscard]] EncodedMessage NotifyMessage::encode() const
+{
+  EncodedMessage encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[8];
+
+  encodeSingleValue(&m_nodeId, payload_p);
+  payload_p += sizeof(NodeId);
+
+  return std::move(encoded);
+}
+
+void NotifyMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_nodeId);
+  payload_p += sizeof(NodeId);
+}
+
+[[nodiscard]] const NodeId& NotifyMessage::nodeId() const
+{
+  return m_nodeId;
+}
+
 GetNeighboursMessage::GetNeighboursMessage(CommsVersion version,
                                            const NodeId& sourceNodeId,
                                            uint32_t requestId)

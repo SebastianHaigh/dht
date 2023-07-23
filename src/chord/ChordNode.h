@@ -44,6 +44,7 @@ class ChordNode
     void handleJoinRequest(const JoinMessage& message);
     void handleJoinResponse(const JoinResponseMessage& message);
 
+    void handleNotify(const NotifyMessage& message);
     void handleGetNeighbours(const GetNeighboursMessage& message);
     void handleGetNeighboursResponse(const GetNeighboursResponseMessage& message);
 
@@ -56,6 +57,8 @@ class ChordNode
       NodeId predecessor;
     };
     std::future<Neighbours> getNeighbours(const NodeId& nodeToQuery);
+
+    void notify(const NodeId& nodeId);
 
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 

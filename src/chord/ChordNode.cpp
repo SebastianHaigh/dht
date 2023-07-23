@@ -214,6 +214,13 @@ std::future<ChordNode::Neighbours> ChordNode::getNeighbours(const NodeId& nodeTo
   return getNeighboursFuture;
 }
 
+void ChordNode::notify(const NodeId& nodeId)
+{
+  NotifyMessage message{ CommsVersion::V1, m_id };
+
+  m_connectionManager->send(nodeId, message);
+}
+
 const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
 {
   for (int i = 159; i >= 0; i--)
@@ -291,6 +298,16 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
       break;
     }
 
+    case MessageType::CHORD_NOTIFY:
+    {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received chord notify message" << std::endl;
+      NotifyMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      handleNotify(message);
+    }
+
     case MessageType::CHORD_GET_NEIGHBOURS:
     {
       std::cout << "[" << m_id.toString() << "] ChordNode: received chord get neighbours request" << std::endl;
@@ -340,6 +357,14 @@ void ChordNode::handleJoinRequest(const JoinMessage& message)
 void ChordNode::handleJoinResponse(const JoinResponseMessage& message)
 {
   m_joinPromise.set_value(NodeId{ message.ip() });
+}
+
+void ChordNode::handleNotify(const NotifyMessage& message)
+{
+  if (message.nodeId() > m_predecessor && message.nodeId() < m_id)
+  {
+    m_predecessor = message.nodeId();
+  }
 }
 
 void ChordNode::handleGetNeighbours(const GetNeighboursMessage& message)

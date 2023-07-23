@@ -97,7 +97,7 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 {
   std::cout << "[" << m_id.toString() << "] ChordNode: finding successor for " << message.queryNodeId().toString() << std::endl;
 
-  if (message.queryNodeId() < m_id && message.queryNodeId() > m_predecessor)
+  if (containedInOpenInterval(m_id, m_successor, message.queryNodeId()))
   {
     std::cout << "[" << m_id.toString() << "] ChordNode: successor found for " << message.queryNodeId().toString() << std::endl;
 
@@ -230,7 +230,7 @@ const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
 {
   for (int i = 159; i >= 0; i--)
   {
-    if (m_fingerTable.m_fingers[i].m_nodeId > m_id && m_fingerTable.m_fingers[i].m_nodeId < id)
+    if (containedInOpenInterval(m_id, id, m_fingerTable.m_fingers[i].m_nodeId))
     {
       return m_fingerTable.m_fingers[i].m_nodeId;
     }
@@ -366,7 +366,8 @@ void ChordNode::handleJoinResponse(const JoinResponseMessage& message)
 
 void ChordNode::handleNotify(const NotifyMessage& message)
 {
-  if (message.nodeId() > m_predecessor && message.nodeId() < m_id)
+  if (not m_predecessor.has_value() ||
+      (containedInOpenInterval(m_predecessor.value(), m_id, message.nodeId())))
   {
     *m_predecessor = message.nodeId();
   }

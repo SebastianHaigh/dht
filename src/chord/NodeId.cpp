@@ -278,5 +278,41 @@ std::string NodeId::toString() const
   return ss.str();
 }
 
+bool intervalWrapsZero(const NodeId& begin, const NodeId& end)
+{
+  return (end <= begin);
+}
+
+bool containedInClosedInterval(const NodeId& begin, const NodeId& end, const NodeId& value)
+{
+  if (intervalWrapsZero(begin, end))
+  {
+    return not (value > end && value < begin);
+  }
+
+  return (value >= begin && value <= end);
+}
+
+bool containedInOpenInterval(const NodeId& begin, const NodeId& end, const NodeId& value)
+{
+  if (value == begin || value == end) return false;
+
+  return containedInClosedInterval(begin, end, value);
+}
+
+bool containedInLeftOpenInterval(const NodeId& begin, const NodeId& end, const NodeId& value)
+{
+  if (value == begin) return false;
+
+  return containedInClosedInterval(begin, end, value);
+}
+
+bool containedInRightOpenInterval(const NodeId& begin, const NodeId& end, const NodeId& value)
+{
+  if (value == end) return false;
+
+  return containedInClosedInterval(begin, end, value);
+}
+
 } // namespace chord
 

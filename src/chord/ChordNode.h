@@ -44,8 +44,18 @@ class ChordNode
     void handleJoinRequest(const JoinMessage& message);
     void handleJoinResponse(const JoinResponseMessage& message);
 
+    void handleGetNeighbours(const GetNeighboursMessage& message);
+    void handleGetNeighboursResponse(const GetNeighboursResponseMessage& message);
+
     std::future<NodeId> findSuccessor(const NodeId& hash);
     std::future<NodeId> findSuccessor(const NodeId& nodeToQuery, const NodeId& hash);
+
+    struct Neighbours
+    {
+      NodeId successor;
+      NodeId predecessor;
+    };
+    std::future<Neighbours> getNeighbours(const NodeId& nodeToQuery);
 
     static uint32_t convertIpAddressToInteger(const std::string& ipAddress);
 
@@ -74,6 +84,7 @@ class ChordNode
 
     std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;
     std::unordered_map<uint32_t, std::promise<NodeId>> m_findSuccessorPromises;
+    std::unordered_map<uint32_t, std::promise<Neighbours>> m_getNeighboursPromises;
     std::promise<NodeId> m_joinPromise;
 };
 

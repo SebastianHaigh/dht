@@ -191,6 +191,29 @@ std::future<NodeId> ChordNode::findSuccessor(const NodeId& nodeToQuery, const No
   return findSuccessorFuture;
 }
 
+std::future<ChordNode::Neighbours> ChordNode::getNeighbours(const NodeId& nodeToQuery)
+{
+  auto requestId = getNextAvailableRequestId();
+
+  PendingMessageResponse pending;
+  pending.m_type = MessageType::CHORD_GET_NEIGHBOURS_RESPONSE;
+  pending.m_nodeId = nodeToQuery;
+  pending.m_hasChain = false;
+
+  m_pendingResponses.emplace(requestId, pending);
+
+  std::promise<Neighbours> getNeighboursPromise;
+  std::future<Neighbours> getNeighboursFuture = getNeighboursPromise.get_future();
+
+  m_getNeighboursPromises.emplace(requestId, std::move(getNeighboursPromise));
+
+  GetNeighboursMessage message{ CommsVersion::V1, m_id, requestId };
+
+  m_connectionManager->send(nodeToQuery, message);
+
+  return getNeighboursFuture;
+}
+
 const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
 {
   for (int i = 159; i >= 0; i--)
@@ -268,6 +291,26 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
       break;
     }
 
+    case MessageType::CHORD_GET_NEIGHBOURS:
+    {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received chord get neighbours request" << std::endl;
+      GetNeighboursMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      handleGetNeighbours(message);
+    }
+
+    case MessageType::CHORD_GET_NEIGHBOURS_RESPONSE:
+    {
+      std::cout << "[" << m_id.toString() << "] ChordNode: received chord get neighbours response" << std::endl;
+      GetNeighboursResponseMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      handleGetNeighboursResponse(message);
+    }
+
     default:
     {
       std::cout << "[" << m_id.toString() << "] ChordNode: received unknown message type: " << (int) type << std::endl;
@@ -297,6 +340,40 @@ void ChordNode::handleJoinRequest(const JoinMessage& message)
 void ChordNode::handleJoinResponse(const JoinResponseMessage& message)
 {
   m_joinPromise.set_value(NodeId{ message.ip() });
+}
+
+void ChordNode::handleGetNeighbours(const GetNeighboursMessage& message)
+{
+  GetNeighboursResponseMessage response{ CommsVersion::V1, m_successor, m_predecessor, m_id, message.requestId() };
+
+  m_connectionManager->send(message.sourceNodeId(), response);
+}
+
+void ChordNode::handleGetNeighboursResponse(const GetNeighboursResponseMessage& message)
+{
+  auto it = m_pendingResponses.find(message.requestId());
+
+  if (it == m_pendingResponses.end())
+  {
+    std::cout << "Unexpected get neighbours response from node: " << message.sourceNodeId().toString() << std::endl;
+    return;
+  }
+
+  // This message is for us, there should be a promise waiting for the result
+  auto promiseIter = m_getNeighboursPromises.find(message.requestId());
+
+  if (promiseIter == m_getNeighboursPromises.end())
+  {
+    std::cout << "Expected promise, but there wasn't one" << std::endl;
+    return;
+  }
+
+  Neighbours neighbours;
+  neighbours.predecessor = message.predecessor();
+  neighbours.successor = message.successor();
+  promiseIter->second.set_value(neighbours);
+
+  m_getNeighboursPromises.erase(promiseIter);
 }
 
 uint32_t ChordNode::getNextAvailableRequestId()

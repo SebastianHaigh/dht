@@ -230,12 +230,27 @@ GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version,
     m_successor(successor),
     m_predecessor(predecessor),
     m_sourceNodeId(sourceNodeId),
+    m_hasPredecessor(true),
+    m_requestId(requestId)
+{
+}
+
+GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version,
+                                                           const NodeId& successor,
+                                                           const NodeId& sourceNodeId,
+                                                           uint32_t requestId)
+  : Message(version, MessageType::CHORD_GET_NEIGHBOURS_RESPONSE, sizeof(bool) + sizeof(uint32_t) + 3 * sizeof(NodeId)),
+    m_successor(successor),
+    m_predecessor{},
+    m_sourceNodeId(sourceNodeId),
+    m_hasPredecessor(false),
     m_requestId(requestId)
 {
 }
 
 GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version)
-  : Message(version, MessageType::CHORD_GET_NEIGHBOURS_RESPONSE, sizeof(uint32_t) + 3 * sizeof(NodeId)),
+  : Message(version, MessageType::CHORD_GET_NEIGHBOURS_RESPONSE, sizeof(bool) + sizeof(uint32_t) + 3 * sizeof(NodeId)),
+    m_hasPredecessor(false),
     m_requestId(0)
 {
 }
@@ -254,6 +269,9 @@ GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version)
 
   encodeSingleValue(&m_sourceNodeId, payload_p);
   payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_hasPredecessor, payload_p);
+  payload_p += sizeof(bool);
 
   encodeSingleValue(&m_requestId, payload_p);
 
@@ -275,6 +293,9 @@ void GetNeighboursResponseMessage::decode(const EncodedMessage& message)
   decodeSingleValue(payload_p, &m_sourceNodeId);
   payload_p += sizeof(NodeId);
 
+  decodeSingleValue(payload_p, &m_hasPredecessor);
+  payload_p += sizeof(bool);
+
   decodeSingleValue(payload_p, &m_requestId);
 }
 
@@ -291,6 +312,11 @@ void GetNeighboursResponseMessage::decode(const EncodedMessage& message)
 [[nodiscard]] const NodeId& GetNeighboursResponseMessage::sourceNodeId() const
 {
   return m_sourceNodeId;
+}
+
+[[nodiscard]] bool GetNeighboursResponseMessage::hasPredecessor() const
+{
+  return m_hasPredecessor;
 }
 
 [[nodiscard]] uint32_t GetNeighboursResponseMessage::requestId() const

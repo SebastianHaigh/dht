@@ -2,6 +2,7 @@
 #define CHORD_NODE_H_
 
 #include <future>
+#include <optional>
 
 #include "../comms/Comms.h"
 
@@ -25,7 +26,7 @@ class ChordNode
     void join(const std::string &knownNodeIpAddress);
     NodeId& getId();
 
-    const NodeId& getPredecessorId();
+    const std::optional<NodeId>& getPredecessorId();
     const NodeId& getSuccessorId();
 
     const NodeId& closestPrecedingFinger(const NodeId& id);
@@ -57,6 +58,7 @@ class ChordNode
     {
       NodeId successor;
       NodeId predecessor;
+      bool hasPredecessor;
     };
     std::future<Neighbours> getNeighbours(const NodeId& nodeToQuery);
 
@@ -68,7 +70,8 @@ class ChordNode
 
     const uint32_t m_ipAddress;
     NodeId m_id;
-    NodeId m_predecessor;
+
+    std::optional<NodeId> m_predecessor;
     NodeId m_successor;
     FingerTable m_fingerTable;
     const uint16_t m_port;

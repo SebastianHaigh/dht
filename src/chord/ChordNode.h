@@ -23,6 +23,7 @@ class ChordNode
   public:
     ChordNode(const std::string& ip, uint16_t port, const ConnectionManagerFactory& factory);
 
+    void create();
     void join(const std::string &knownNodeIpAddress);
     NodeId& getId();
 

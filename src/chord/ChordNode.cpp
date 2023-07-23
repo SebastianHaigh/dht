@@ -35,6 +35,12 @@ uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
   return sa.sin_addr.s_addr;
 }
 
+void ChordNode::create()
+{
+  m_predecessor = std::nullopt;
+  m_successor = m_id;
+}
+
 void ChordNode::join(const std::string &knownNodeIpAddress)
 {
   m_predecessor = std::nullopt;

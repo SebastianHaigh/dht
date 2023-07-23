@@ -21,7 +21,10 @@ using ConnectionManagerFactory = std::function<std::unique_ptr<ConnectionManager
 class ChordNode
 {
   public:
-    ChordNode(const std::string& ip, uint16_t port, const ConnectionManagerFactory& factory);
+    ChordNode(const std::string& nodeName,
+              const std::string& ip,
+              uint16_t port,
+              const ConnectionManagerFactory& factory);
 
     void create();
     void join(const std::string &knownNodeIpAddress);
@@ -34,6 +37,7 @@ class ChordNode
     void receive(uint8_t* message, std::size_t messageLength);
 
   private:
+    void log(const std::string& message);
 
     void doFindSuccessor(const FindSuccessorMessage& message);
     void handleFindSuccessorResponse(const FindSuccessorResponseMessage& message);
@@ -69,6 +73,7 @@ class ChordNode
 
     uint32_t getNextAvailableRequestId();
 
+    const std::string m_nodeName;
     const uint32_t m_ipAddress;
     NodeId m_id;
 

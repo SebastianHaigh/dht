@@ -190,15 +190,41 @@ TEST_CASE("Test the creation of a chord node")
     return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
   };
 
-  ChordNode node0{"200.178.0.1", 0, factory};
+  ChordNode node0{"node0", "200.178.0.1", 0, factory};
 
   // Create another node and join the network that is currently formed by the first node
 
-  ChordNode node1{"200.178.0.5", 0, factory};
-  node0.create();
+  ChordNode node1{"node1", "200.178.0.5", 0, factory};
+
   node0.create();
 
   node1.join("200.178.0.1");
+
+  REQUIRE(node0.getSuccessorId() == node1.getPredecessorId().value());
+  REQUIRE(node1.getPredecessorId().value() == node0.getSuccessorId());
+}
+
+TEST_CASE("Test fixing the fingers")
+{
+  NetworkSimulator networkSimulator;
+
+  ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  {
+    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
+  };
+
+  ChordNode node0{"node0", "201.178.0.1", 0, factory};
+  ChordNode node1{"node1", "200.178.0.5", 0, factory};
+  ChordNode node2{"node2", "200.178.0.10", 0, factory};
+
+  node0.create();
+
+  node1.join("200.178.0.1");
+
+  std::cout << "node 1 has joined" << std::endl;
+  node2.join("200.178.0.1");
+
+  std::cout << "node 2 has joined" << std::endl;
 
   REQUIRE(node0.getSuccessorId() == node1.getPredecessorId());
   REQUIRE(node1.getPredecessorId() == node0.getSuccessorId());

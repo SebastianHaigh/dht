@@ -195,6 +195,8 @@ TEST_CASE("Test the creation of a chord node")
   // Create another node and join the network that is currently formed by the first node
 
   ChordNode node1{"200.178.0.5", 0, factory};
+  node0.create();
+  node0.create();
 
   node1.join("200.178.0.1");
 

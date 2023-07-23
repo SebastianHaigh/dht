@@ -48,6 +48,8 @@ class ChordNode
     void handleGetNeighbours(const GetNeighboursMessage& message);
     void handleGetNeighboursResponse(const GetNeighboursResponseMessage& message);
 
+    void stabilise();
+
     std::future<NodeId> findSuccessor(const NodeId& hash);
     std::future<NodeId> findSuccessor(const NodeId& nodeToQuery, const NodeId& hash);
 

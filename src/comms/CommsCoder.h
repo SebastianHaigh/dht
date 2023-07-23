@@ -47,7 +47,7 @@ void swapEndian(T* value)
 {
   if constexpr (sizeof(T) == 1)
   {
-    swapEndian8(value);
+    return;
   }
   else if constexpr (sizeof(T) == 2)
   {

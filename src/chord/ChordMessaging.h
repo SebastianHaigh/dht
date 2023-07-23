@@ -98,6 +98,12 @@ class GetNeighboursResponseMessage : public Message
                                  const NodeId& predecessor,
                                  const NodeId& sourceNodeId,
                                  uint32_t requestId);
+
+    GetNeighboursResponseMessage(CommsVersion version,
+                                 const NodeId& successor,
+                                 const NodeId& sourceNodeId,
+                                 uint32_t requestId);
+
     explicit GetNeighboursResponseMessage(CommsVersion version);
     ~GetNeighboursResponseMessage() = default;
 
@@ -107,12 +113,14 @@ class GetNeighboursResponseMessage : public Message
     [[nodiscard]] const NodeId& successor() const;
     [[nodiscard]] const NodeId& predecessor() const;
     [[nodiscard]] const NodeId& sourceNodeId() const;
+    [[nodiscard]] bool hasPredecessor() const;
     [[nodiscard]] uint32_t requestId() const;
 
   private:
     NodeId m_successor;
     NodeId m_predecessor;
     NodeId m_sourceNodeId;
+    bool m_hasPredecessor;
     uint32_t m_requestId;
 };
 

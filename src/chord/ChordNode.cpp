@@ -12,8 +12,8 @@ ChordNode::ChordNode(const std::string& ip,
                      const ConnectionManagerFactory& connectionManagerFactory)
   : m_ipAddress{convertIpAddressToInteger(ip)},
     m_id(m_ipAddress),
-    m_predecessor{},
-    m_successor{},
+    m_predecessor{std::nullopt},
+    m_successor{m_id},
     m_port{port},
     m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
 {
@@ -37,6 +37,8 @@ uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
 
 void ChordNode::join(const std::string &knownNodeIpAddress)
 {
+  m_predecessor = std::nullopt;
+
   // The first thing we need to do is create a TcpClient in order to establish a connection to this node
   auto ip = convertIpAddressToInteger(knownNodeIpAddress);
 
@@ -73,7 +75,7 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
   stabilise();
 }
 
-const NodeId &ChordNode::getPredecessorId()
+const std::optional<NodeId> &ChordNode::getPredecessorId()
 {
   return m_predecessor;
 }
@@ -366,13 +368,22 @@ void ChordNode::handleNotify(const NotifyMessage& message)
 {
   if (message.nodeId() > m_predecessor && message.nodeId() < m_id)
   {
-    m_predecessor = message.nodeId();
+    *m_predecessor = message.nodeId();
   }
 }
 
 void ChordNode::handleGetNeighbours(const GetNeighboursMessage& message)
 {
-  GetNeighboursResponseMessage response{ CommsVersion::V1, m_successor, m_predecessor, m_id, message.requestId() };
+  GetNeighboursResponseMessage response{ CommsVersion::V1 };
+
+  if (m_predecessor.has_value())
+  {
+    response = GetNeighboursResponseMessage{ CommsVersion::V1, m_successor, m_predecessor.value(), m_id, message.requestId() };
+  }
+  else
+  {
+    response = GetNeighboursResponseMessage{ CommsVersion::V1, m_successor, m_id, message.requestId() };
+  }
 
   m_connectionManager->send(message.sourceNodeId(), response);
 }
@@ -399,6 +410,7 @@ void ChordNode::handleGetNeighboursResponse(const GetNeighboursResponseMessage& 
   Neighbours neighbours;
   neighbours.predecessor = message.predecessor();
   neighbours.successor = message.successor();
+  neighbours.hasPredecessor = message.hasPredecessor();
   promiseIter->second.set_value(neighbours);
 
   m_getNeighboursPromises.erase(promiseIter);
@@ -429,7 +441,9 @@ void ChordNode::stabilise()
 
   Neighbours successorNeighbours = successorNeighboursFuture.get();
 
-  if (successorNeighbours.predecessor > m_id && successorNeighbours.predecessor < m_successor)
+  if (successorNeighbours.hasPredecessor &&
+      successorNeighbours.predecessor > m_id &&
+      successorNeighbours.predecessor < m_successor)
   {
     m_successor = successorNeighbours.predecessor;
   }

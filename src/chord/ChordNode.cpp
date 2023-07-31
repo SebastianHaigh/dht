@@ -116,7 +116,7 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
     log("successor found for " + message.queryNodeId().toString());
 
     // If this is the case then we can start returning
-    FindSuccessorResponseMessage response{ CommsVersion::V1, m_successor, m_id, message.requestId() };
+    FindSuccessorResponseMessage response{ CommsVersion::V1, m_successor, m_id, m_connectionManager->ip(m_successor), message.requestId() };
 
     log("sending FindSuccessorResponse");
     m_connectionManager->send(message.sourceNodeId(), response);
@@ -161,6 +161,7 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
     FindSuccessorResponseMessage messageToForward{ CommsVersion::V1,
                                                    message.nodeId(),
                                                    m_id,
+                                                   message.ip(),
                                                    message.requestId() };
 
     log("sending FindSuccessorResponse");

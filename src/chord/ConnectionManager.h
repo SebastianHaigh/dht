@@ -18,6 +18,7 @@ class ConnectionManager_I
     virtual void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) = 0;
     virtual void remove(const NodeId& id) = 0;
     [[nodiscard]] virtual uint32_t ip() const = 0;
+    [[nodiscard]] virtual uint32_t ip(const NodeId& nodeId) const = 0;
 };
 
 /*
@@ -39,6 +40,8 @@ class ConnectionManager : public ConnectionManager_I
 
     [[nodiscard]] uint32_t ip() const override;
 
+    [[nodiscard]] uint32_t ip(const NodeId& nodeId) const override;
+
   private:
 
     struct NodeConnection
@@ -53,6 +56,7 @@ class ConnectionManager : public ConnectionManager_I
     };
 
     std::vector<NodeConnection>::iterator getNodeConnection(const NodeId& nodeId);
+    std::vector<NodeConnection>::const_iterator getNodeConnection(const NodeId& nodeId) const;
 
     std::size_t getClientIndex(const NodeId& nodeId);
 

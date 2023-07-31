@@ -62,8 +62,14 @@ ConnectionManager::getNodeConnection(const NodeId& nodeId)
                           nodeId,
                           [](const NodeConnection& lhs, const NodeId& rhs)
                           {
-                          return lhs.m_id < rhs;
+                            return lhs.m_id < rhs;
                           });
+}
+
+std::vector<ConnectionManager::NodeConnection>::const_iterator
+ConnectionManager::getNodeConnection(const NodeId& nodeId) const
+{
+  return const_cast<ConnectionManager*>(this)->getNodeConnection(nodeId);
 }
 
 std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
@@ -76,6 +82,15 @@ std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
 [[nodiscard]] uint32_t ConnectionManager::ip() const
 {
   return m_localIpAddress;
+}
+
+[[nodiscard]] uint32_t ConnectionManager::ip(const NodeId& nodeId) const
+{
+  auto it = getNodeConnection(nodeId);
+
+  if (it == m_nodeConnections.end()) return 0;
+
+  return 0;
 }
 
 }

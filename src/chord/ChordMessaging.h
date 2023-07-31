@@ -36,6 +36,7 @@ class FindSuccessorResponseMessage : public Message
     FindSuccessorResponseMessage(CommsVersion version,
                                  const NodeId& nodeId,
                                  const NodeId& sourceNodeId,
+                                 uint32_t ipAddress,
                                  uint32_t requestId);
     explicit FindSuccessorResponseMessage(CommsVersion version);
     ~FindSuccessorResponseMessage() = default;
@@ -45,11 +46,13 @@ class FindSuccessorResponseMessage : public Message
 
     [[nodiscard]] const NodeId& nodeId() const;
     [[nodiscard]] const NodeId& sourceNodeId() const;
+    [[nodiscard]] uint32_t ip() const;
     [[nodiscard]] uint32_t requestId() const;
 
   private:
     NodeId m_nodeId;
     NodeId m_sourceNodeId;
+    uint32_t m_ipAddress;
     uint32_t m_requestId;
 };
 

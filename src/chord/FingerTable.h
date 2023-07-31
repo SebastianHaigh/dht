@@ -18,6 +18,7 @@ struct FingerTable
 {
   std::array<FingerTableEntry, 160> m_fingers;
   NodeId m_localNodeId;
+  std::size_t m_next;
 };
 
 void initialiseFingerTable(FingerTable& fingerTable, const NodeId& nodeId);

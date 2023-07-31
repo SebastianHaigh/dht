@@ -240,7 +240,7 @@ GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version,
                                                            const NodeId& predecessor,
                                                            const NodeId& sourceNodeId,
                                                            uint32_t requestId)
-  : Message(version, MessageType::CHORD_GET_NEIGHBOURS_RESPONSE, sizeof(uint32_t) + 3 * sizeof(NodeId)),
+  : Message(version, MessageType::CHORD_GET_NEIGHBOURS_RESPONSE, sizeof(bool) + sizeof(uint32_t) + 3 * sizeof(NodeId)),
     m_successor(successor),
     m_predecessor(predecessor),
     m_sourceNodeId(sourceNodeId),
@@ -315,12 +315,12 @@ void GetNeighboursResponseMessage::decode(const EncodedMessage& message)
 
 [[nodiscard]] const NodeId& GetNeighboursResponseMessage::successor() const
 {
-  return m_sourceNodeId;
+  return m_successor;
 }
 
 [[nodiscard]] const NodeId& GetNeighboursResponseMessage::predecessor() const
 {
-  return m_sourceNodeId;
+  return m_predecessor;
 }
 
 [[nodiscard]] const NodeId& GetNeighboursResponseMessage::sourceNodeId() const

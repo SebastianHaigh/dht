@@ -70,16 +70,19 @@ void FindSuccessorMessage::decode(const EncodedMessage& message)
 FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version,
                                                            const NodeId& nodeId,
                                                            const NodeId& sourceNodeId,
+                                                           uint32_t ipAddress,
                                                            uint32_t requestId)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId) + 4),
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId) + 8),
     m_nodeId(nodeId),
     m_sourceNodeId(sourceNodeId),
+    m_ipAddress(ipAddress),
     m_requestId(requestId)
 {
 }
 
 FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version)
-  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId) + 4),
+  : Message(version, MessageType::CHORD_FIND_SUCCESSOR_RESPONSE, 2 * sizeof(NodeId) + 8),
+    m_ipAddress(0),
     m_requestId(0)
 {
 }
@@ -95,6 +98,9 @@ FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version)
 
   encodeSingleValue(&m_sourceNodeId, payload_p);
   payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_ipAddress, payload_p);
+  payload_p += sizeof(uint32_t);
 
   encodeSingleValue(&m_requestId, payload_p);
 
@@ -113,6 +119,9 @@ void FindSuccessorResponseMessage::decode(const EncodedMessage& message)
   decodeSingleValue(payload_p, &m_sourceNodeId);
   payload_p += sizeof(NodeId);
 
+  decodeSingleValue(payload_p, &m_ipAddress);
+  payload_p += sizeof(uint32_t);
+
   decodeSingleValue(payload_p, &m_requestId);
 }
 
@@ -124,6 +133,11 @@ void FindSuccessorResponseMessage::decode(const EncodedMessage& message)
 [[nodiscard]] const NodeId& FindSuccessorResponseMessage::sourceNodeId() const
 {
   return m_sourceNodeId;
+}
+
+[[nodiscard]] uint32_t FindSuccessorResponseMessage::ip() const
+{
+  return m_ipAddress;
 }
 
 [[nodiscard]] uint32_t FindSuccessorResponseMessage::requestId() const

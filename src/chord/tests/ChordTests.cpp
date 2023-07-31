@@ -88,6 +88,19 @@ class MockConnectionManager : public ConnectionManager_I
       return m_simulatedNode.ip();
     }
 
+    [[nodiscard]] uint32_t ip(const NodeId& nodeId) const override
+    {
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        if (idIpPair.first == nodeId)
+        {
+          return idIpPair.second;
+        }
+      }
+
+      return 0;
+    }
+
   private:
     NodeId m_nodeId;
     SimulatedNode& m_simulatedNode;

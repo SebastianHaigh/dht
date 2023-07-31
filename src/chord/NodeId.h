@@ -181,7 +181,7 @@ bool intervalWrapsZero(const NodeId& begin, const NodeId& end);
 bool containedInClosedInterval(const NodeId& begin, const NodeId& end, const NodeId& value);
 bool containedInOpenInterval(const NodeId& begin, const NodeId& end, const NodeId& value);
 bool containedInLeftOpenInterval(const NodeId& begin, const NodeId& end, const NodeId& value);
-bool containedInRightInterval(const NodeId& begin, const NodeId& end, const NodeId& value);
+bool containedInRightOpenInterval(const NodeId& begin, const NodeId& end, const NodeId& value);
 
 }
 

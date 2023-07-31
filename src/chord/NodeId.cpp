@@ -285,9 +285,11 @@ bool intervalWrapsZero(const NodeId& begin, const NodeId& end)
 
 bool containedInClosedInterval(const NodeId& begin, const NodeId& end, const NodeId& value)
 {
+  if (begin == end) return true;
+
   if (intervalWrapsZero(begin, end))
   {
-    return not (value > end && value < begin);
+    return (value >= begin || value <= end);
   }
 
   return (value >= begin && value <= end);

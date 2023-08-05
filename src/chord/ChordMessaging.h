@@ -127,6 +127,27 @@ class GetNeighboursResponseMessage : public Message
     uint32_t m_requestId;
 };
 
+class ConnectMessage : public Message
+{
+  public:
+    ConnectMessage(CommsVersion version,
+                   const NodeId& nodeId,
+                   uint32_t ip);
+
+    explicit ConnectMessage(CommsVersion version);
+    ~ConnectMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] const NodeId& nodeId() const;
+    [[nodiscard]] uint32_t ip() const;
+
+  private:
+    NodeId m_nodeId;
+    uint32_t m_ip;
+};
+
 class FindIpMessage : public Message
 {
   public:

@@ -5,6 +5,7 @@ target_link_libraries(ChordTests
                       PRIVATE 
                       Catch2::Catch2WithMain 
                       Chord
-                      NetworkSimulation)
+                      NetworkSimulation
+                      Logging)
 add_test(NAME ChordTests
          COMMAND ChordTests)

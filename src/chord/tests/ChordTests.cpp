@@ -197,17 +197,18 @@ TEST_CASE("Add some more node ids")
 TEST_CASE("Test the creation of a chord node")
 {
   NetworkSimulator networkSimulator;
+  logging::Log log;
 
   ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
     return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
   };
 
-  ChordNode node0{"node0", "200.178.0.1", 0, factory};
+  ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
 
   // Create another node and join the network that is currently formed by the first node
 
-  ChordNode node1{"node1", "200.178.0.5", 0, factory};
+  ChordNode node1{"node1", "200.178.0.5", 0, factory, log.makeLogger("CHORDNODE")};
 
   node0.create();
 
@@ -224,15 +225,16 @@ TEST_CASE("Test the creation of a chord node")
 TEST_CASE("Test fixing the fingers")
 {
   NetworkSimulator networkSimulator;
+  logging::Log log;
 
   ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
     return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
   };
 
-  ChordNode node0{"node0", "200.178.0.1", 0, factory};
-  ChordNode node1{"node1", "200.178.0.5", 0, factory};
-  ChordNode node2{"node2", "200.178.0.10", 0, factory};
+  ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
+  ChordNode node1{"node1", "200.178.0.5", 0, factory, log.makeLogger("CHORDNODE")};
+  ChordNode node2{"node2", "200.178.0.10", 0, factory, log.makeLogger("CHORDNODE")};
   node0.create();
 
   node1.join("200.178.0.1");

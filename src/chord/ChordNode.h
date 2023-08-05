@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "../comms/Comms.h"
+#include "../logger/Logger.h"
 
 #include "ChordMessaging.h"
 #include "NodeId.h"
@@ -71,7 +72,8 @@ class ChordNode
     ChordNode(const std::string& nodeName,
               const std::string& ip,
               uint16_t port,
-              const ConnectionManagerFactory& factory);
+              const ConnectionManagerFactory& factory,
+              logging::Logger logger);
 
     void create();
     void join(const std::string &knownNodeIpAddress);
@@ -151,6 +153,9 @@ class ChordNode
       bool m_hasChain;
       NodeId m_chainingDestination;
     };
+
+    logging::Logger m_logger;
+    const std::string m_logPrefix;
 
     std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;
     std::unordered_map<uint32_t, std::promise<NodeId>> m_findSuccessorPromises;

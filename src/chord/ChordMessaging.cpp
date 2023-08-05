@@ -337,4 +337,83 @@ void GetNeighboursResponseMessage::decode(const EncodedMessage& message)
 {
   return m_requestId;
 }
+
+FindIpMessage::FindIpMessage(CommsVersion version,
+                             const NodeId& nodeId,
+                             const NodeId& sourceNodeId,
+                             uint32_t sourceNodeIp,
+                             uint32_t timeToLive)
+  : Message(version, MessageType::FIND_IP, 3 * sizeof(uint32_t) + 2 * sizeof(NodeId)),
+    m_nodeId(nodeId),
+    m_sourceNodeId(sourceNodeId),
+    m_sourceNodeIp(sourceNodeIp),
+    m_timeToLive(timeToLive)
+{
+}
+
+FindIpMessage::FindIpMessage(CommsVersion version)
+  : Message(version, MessageType::FIND_IP, 3 * sizeof(uint32_t) + 2 * sizeof(NodeId)),
+    m_sourceNodeIp(0),
+    m_timeToLive(0)
+{
+}
+
+[[nodiscard]] EncodedMessage FindIpMessage::encode() const
+{
+  EncodedMessage encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[8];
+
+  encodeSingleValue(&m_nodeId, payload_p);
+  payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_sourceNodeId, payload_p);
+  payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_sourceNodeIp, payload_p);
+  payload_p += sizeof(uint32_t);
+
+  encodeSingleValue(&m_timeToLive, payload_p);
+
+  return std::move(encoded);
+}
+
+void FindIpMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_nodeId);
+  payload_p += sizeof(NodeId);
+
+  decodeSingleValue(payload_p, &m_sourceNodeId);
+  payload_p += sizeof(NodeId);
+
+  decodeSingleValue(payload_p, &m_sourceNodeIp);
+  payload_p += sizeof(uint32_t);
+
+  decodeSingleValue(payload_p, &m_timeToLive);
+}
+
+[[nodiscard]] const NodeId& FindIpMessage::nodeId() const
+{
+  return m_nodeId;
+}
+
+[[nodiscard]] const NodeId& FindIpMessage::sourceNodeId() const
+{
+  return m_sourceNodeId;
+}
+
+[[nodiscard]] uint32_t FindIpMessage::sourceNodeIp() const
+{
+  return m_sourceNodeIp;
+}
+
+[[nodiscard]] uint32_t FindIpMessage::timeToLive() const
+{
+  return m_timeToLive;
+}
+
 }

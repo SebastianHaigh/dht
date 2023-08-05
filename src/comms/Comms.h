@@ -42,6 +42,8 @@ enum class MessageType : uint32_t
 {
   JOIN                           = 0x00000001,
   JOIN_RESPONSE                  = 0x00000002,
+  CONNECT                        = 0x00000003,
+  FIND_IP                        = 0x00000004,
 
   POSITION                       = 0x00000101,
 

@@ -127,6 +127,35 @@ class GetNeighboursResponseMessage : public Message
     uint32_t m_requestId;
 };
 
+class FindIpMessage : public Message
+{
+  public:
+    FindIpMessage(CommsVersion version,
+                  const NodeId& nodeId,
+                  const NodeId& sourceNodeId,
+                  uint32_t sourceNodeIp,
+                  uint32_t timeToLive);
+
+    explicit FindIpMessage(CommsVersion version);
+    ~FindIpMessage() = default;
+
+    [[nodiscard]] EncodedMessage encode() const override;
+    void decode(const EncodedMessage& message) override;
+
+    [[nodiscard]] const NodeId& nodeId() const;
+    [[nodiscard]] const NodeId& sourceNodeId() const;
+    [[nodiscard]] uint32_t sourceNodeIp() const;
+    [[nodiscard]] uint32_t timeToLive() const;
+
+    void decrementTimeToLive() { m_timeToLive--; }
+
+  private:
+    NodeId m_nodeId;
+    NodeId m_sourceNodeId;
+    uint32_t m_sourceNodeIp;
+    uint32_t m_timeToLive;
+};
+
 }
 
 #endif // CHORD_MESSAGING_H_

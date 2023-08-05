@@ -107,6 +107,9 @@ class ChordNode
     void sendConnect(const NodeId& nodeId, uint32_t ip);
     void handleConnectMessage(const ConnectMessage& message);
 
+    void findIp(const NodeId& nodeId);
+    void handleFindIp(const FindIpMessage& message);
+
     void fixFingers();
 
     void stabilise();

@@ -14,7 +14,7 @@ ChordNode::ChordNode(const std::string& nodeName,
   : m_nodeName(nodeName),
     m_ipAddress{convertIpAddressToInteger(ip)},
     m_id(m_ipAddress),
-    m_predecessor{std::nullopt},
+    m_predecessor{},
     m_successor{m_id},
     m_port{port},
     m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port))
@@ -28,6 +28,7 @@ ChordNode::ChordNode(const std::string& nodeName,
 
   m_connectionManager->registerReceiveHandler(onReceiveCallback);
 
+  m_workThread = std::thread{&ChordNode::workThread, this};
 }
 
 uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
@@ -39,59 +40,92 @@ uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
 
 void ChordNode::create()
 {
-  m_predecessor = std::nullopt;
+  m_predecessor = NodeId{};
+  m_hasPredecessor = false;
   m_successor = m_id;
 }
 
 void ChordNode::join(const std::string &knownNodeIpAddress)
 {
-  m_predecessor = std::nullopt;
+  std::function<bool()> joinTask = [this, knownNodeIpAddress] ()
+  {
+    log("Running join task");
+    m_predecessor = NodeId{};
+    m_hasPredecessor = false;
 
-  // The first thing we need to do is create a TcpClient in order to establish a connection to this node
+    auto ip = convertIpAddressToInteger(knownNodeIpAddress);
+    NodeId knownNodeId{ ip };
+    m_connectionManager->insert(knownNodeId, ip, m_port);
+    m_successor = knownNodeId;
+
+    auto requestId = getNextAvailableRequestId();
+
+    PendingMessageResponse pending;
+    pending.m_type = MessageType::JOIN_RESPONSE;
+    pending.m_nodeId = knownNodeId;
+    pending.m_hasChain = false;
+
+    m_pendingResponses.emplace(requestId, pending);
+
+    m_joinFuture = m_joinPromise.get_future();
+
+    JoinMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip(), requestId };
+
+    log("JoinTask: sending JoinMessage");
+
+    m_connectionManager->send(knownNodeId, joinMessage);
+
+    return true;
+  };
+
+  m_queue.putWork(joinTask);
+
   auto ip = convertIpAddressToInteger(knownNodeIpAddress);
-
-  // Create a NodeId from the ip address
   NodeId knownNodeId{ ip };
 
-  // Insert the node connection into the node connections vector in sorted order
-  m_connectionManager->insert(knownNodeId, ip, m_port);
+  std::function<bool()> findSuccessorTask = [this, knownNodeId] () -> bool
+  {
+    auto requestId = findSuccessor(knownNodeId, m_id);
 
-  // Send a request to the known node to find the successor of this node
-  auto requestId = getNextAvailableRequestId();
+    std::function<bool()> checkFutureTask = [this, requestId] () -> bool
+    {
+      auto it = m_findSuccessorFutures.find(requestId);
 
-  PendingMessageResponse pending;
-  pending.m_type = MessageType::JOIN_RESPONSE;
-  pending.m_nodeId = knownNodeId;
-  pending.m_hasChain = false;
+      // if the future can't be found then do not load this task again.
+      if (it == m_findSuccessorFutures.end()) return true;
 
-  m_pendingResponses.emplace(requestId, pending);
+      auto futureStatus = it->second.wait_for(std::chrono::milliseconds{20});
 
-  std::future<NodeId> joinFuture = m_joinPromise.get_future();
+      // future not ready, run the task again
+      if (futureStatus != std::future_status::ready) return false;
 
-  JoinMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip(), requestId };
+      m_successor = it->second.get();
 
-  log("sending JoinMessage");
-  m_connectionManager->send(knownNodeId, joinMessage);
+      log("first findSuccessor has found successor, " + m_successor.toString());
 
-  joinFuture.wait();
+      // successor found, no need to run again
+      return true;
+    };
 
-  std::future<NodeId> findSuccessorFuture = findSuccessor(knownNodeId, m_id);
+    m_queue.putWork(checkFutureTask);
 
-  // We are going to wait here until we get a response
-  m_successor = findSuccessorFuture.get();
+    return true;
+  };
 
-  log("successor found, set to : " + m_successor.toString());
-
-  // After this we need to initialise the finger table by calling stabilise
-  stabilise();
+  m_queue.putWork(findSuccessorTask);
 }
 
-const std::optional<NodeId> &ChordNode::getPredecessorId()
+const NodeId& ChordNode::getId() const
+{
+  return m_id;
+}
+
+const NodeId &ChordNode::getPredecessorId() const
 {
   return m_predecessor;
 }
 
-const NodeId &ChordNode::getSuccessorId()
+const NodeId &ChordNode::getSuccessorId() const
 {
   return m_successor;
 }
@@ -104,14 +138,26 @@ void ChordNode::receive(uint8_t* message, std::size_t messageLength)
   handleReceivedMessage(encoded);
 }
 
+void ChordNode::workThread()
+{
+  while (true)
+  {
+    m_queue.doNextWork();
+    if (std::chrono::high_resolution_clock::now() - m_lastManageTime > std::chrono::seconds{1})
+    {
+      stabilise();
+      fixFingers();
+      m_lastManageTime = std::chrono::high_resolution_clock::now();
+    }
+
+  }
+}
+
 void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 {
   log("finding successor for " + message.queryNodeId().toString());
-  std::cout << "    m_id " << m_id.toString() << std::endl;
-  std::cout << "    m_successor " << m_successor.toString() << std::endl;
-  std::cout << "    query " << message.queryNodeId().toString() << std::endl;
 
-  if (containedInOpenInterval(m_id, m_successor, message.queryNodeId()))
+  if (containedInLeftOpenInterval(m_id, m_successor, message.queryNodeId()))
   {
     log("successor found for " + message.queryNodeId().toString());
 
@@ -151,7 +197,7 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
 
   if (it == m_pendingResponses.end())
   {
-    std::cout << "Unexpected find successor response from node: " << message.sourceNodeId().toString() << std::endl;
+    log("Unexpected find successor response with ID: " + std::to_string(message.requestId()) + " from node: " + message.sourceNodeId().toString());
     return;
   }
 
@@ -183,17 +229,40 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
 
   promiseIter->second.set_value(message.nodeId());
 
+  m_successor = message.nodeId();
+
+  if (message.nodeId() != m_id)
+  {
+    m_connectionManager->insert(message.nodeId(), message.ip(), 0);
+    sendConnect(message.nodeId());
+  }
+
+  log("m_successor has been set to " + m_successor.toString());
   m_findSuccessorPromises.erase(promiseIter);
 }
 
-std::future<NodeId> ChordNode::findSuccessor(const NodeId& hash)
+uint32_t ChordNode::findSuccessor(const NodeId& hash)
 {
   return findSuccessor(closestPrecedingFinger(hash), hash);
 }
 
-std::future<NodeId> ChordNode::findSuccessor(const NodeId& nodeToQuery, const NodeId& hash)
+uint32_t ChordNode::findSuccessor(const NodeId& nodeToQuery, const NodeId& hash)
 {
   auto requestId = getNextAvailableRequestId();
+
+  std::promise<NodeId> findSuccessorPromise;
+  std::future<NodeId> findSuccessorFuture = findSuccessorPromise.get_future();
+
+  m_findSuccessorFutures.emplace(requestId, std::move(findSuccessorFuture));
+
+  // if the node to query is the current node ID then there is no need to do the RPC
+  if (nodeToQuery == m_id)
+  {
+    findSuccessorPromise.set_value(m_successor);
+    return requestId;
+  }
+
+  m_findSuccessorPromises.emplace(requestId, std::move(findSuccessorPromise));
 
   PendingMessageResponse pending;
   pending.m_type = MessageType::CHORD_FIND_SUCCESSOR_RESPONSE;
@@ -202,41 +271,55 @@ std::future<NodeId> ChordNode::findSuccessor(const NodeId& nodeToQuery, const No
 
   m_pendingResponses.emplace(requestId, pending);
 
-  std::promise<NodeId> findSuccessorPromise;
-  std::future<NodeId> findSuccessorFuture = findSuccessorPromise.get_future();
-
-  m_findSuccessorPromises.emplace(requestId, std::move(findSuccessorPromise));
-
   FindSuccessorMessage message{ CommsVersion::V1, hash, m_id, requestId };
 
   log("sending FindSuccessorMessage");
   m_connectionManager->send(nodeToQuery, message);
 
-  return findSuccessorFuture;
+  return requestId;
 }
 
-std::future<ChordNode::Neighbours> ChordNode::getNeighbours(const NodeId& nodeToQuery)
+uint32_t ChordNode::getNeighbours(const NodeId& nodeToQuery)
 {
   auto requestId = getNextAvailableRequestId();
+
+  log("get neighbours, request ID " + std::to_string(requestId));
+
+  std::promise<Neighbours> getNeighboursPromise;
+  std::future<Neighbours> getNeighboursFuture = getNeighboursPromise.get_future();
+
+  m_getNeighboursPromises.emplace(requestId, std::move(getNeighboursPromise));
+  m_getNeighboursFutures.emplace(requestId, std::move(getNeighboursFuture));
+
+  log("getNeighbours node to query " + nodeToQuery.toString());
+
+  if (nodeToQuery == m_id)
+  {
+    log("handling getNeigbours locally");
+    Neighbours myNeighbours;
+    myNeighbours.hasPredecessor = m_hasPredecessor;
+    myNeighbours.predecessor = m_predecessor;
+    myNeighbours.successor = m_successor;
+
+    m_getNeighboursPromises.find(requestId)->second.set_value(myNeighbours);
+    return requestId;
+  }
 
   PendingMessageResponse pending;
   pending.m_type = MessageType::CHORD_GET_NEIGHBOURS_RESPONSE;
   pending.m_nodeId = nodeToQuery;
   pending.m_hasChain = false;
 
+  log("created a pending response for " + pending.m_nodeId.toString());
+
   m_pendingResponses.emplace(requestId, pending);
-
-  std::promise<Neighbours> getNeighboursPromise;
-  std::future<Neighbours> getNeighboursFuture = getNeighboursPromise.get_future();
-
-  m_getNeighboursPromises.emplace(requestId, std::move(getNeighboursPromise));
 
   GetNeighboursMessage message{ CommsVersion::V1, m_id, requestId };
 
   log("sending GetNeighboursMessage");
   m_connectionManager->send(nodeToQuery, message);
 
-  return getNeighboursFuture;
+  return requestId;
 }
 
 void ChordNode::notify(const NodeId& nodeId)
@@ -289,7 +372,14 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      handleJoinRequest(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("handleJoinRequest task");
+        handleJoinRequest(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
     case MessageType::JOIN_RESPONSE:
@@ -299,7 +389,14 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      handleJoinResponse(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("handleJoinResponse task");
+        handleJoinResponse(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
     case MessageType::CHORD_FIND_SUCCESSOR:
@@ -309,7 +406,14 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      doFindSuccessor(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("doFindSuccessor task");
+        doFindSuccessor(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
 
@@ -320,7 +424,14 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      handleFindSuccessorResponse(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("handleFindSuccessorResponse task");
+        handleFindSuccessorResponse(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
 
@@ -331,7 +442,14 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      handleNotify(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("handleNotify task");
+        handleNotify(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
 
@@ -342,7 +460,14 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      handleGetNeighbours(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("handleGetNeighbours task");
+        handleGetNeighbours(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
 
@@ -353,7 +478,32 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
 
       message.decode(std::move(encoded));
 
-      handleGetNeighboursResponse(message);
+      std::function<bool()> work = [this, message]
+      {
+        log("handleGetNeighboursResponse task");
+        handleGetNeighboursResponse(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
+      break;
+    }
+
+    case MessageType::CONNECT:
+    {
+      log("received connect message") ;
+      ConnectMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      std::function<bool()> work = [this, message]
+      {
+        log("handleConnectMessage task");
+        handleConnectMessage(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
       break;
     }
 
@@ -391,12 +541,13 @@ void ChordNode::handleJoinResponse(const JoinResponseMessage& message)
 
 void ChordNode::handleNotify(const NotifyMessage& message)
 {
-  if (not m_predecessor.has_value() ||
-      (containedInOpenInterval(m_predecessor.value(), m_id, message.nodeId())))
+  if (not m_hasPredecessor ||
+      (containedInOpenInterval(m_predecessor, m_id, message.nodeId())))
   {
-    log("setting predecessor to: " + message.nodeId().toString());
-
-    *m_predecessor = message.nodeId();
+    log("pred " + m_predecessor.toString() + " id " + m_id.toString() + " mess " + message.nodeId().toString());
+    m_predecessor = message.nodeId();
+    m_hasPredecessor = true;
+    log("Notify: predecessor set to: " + m_predecessor.toString());
   }
 }
 
@@ -404,9 +555,10 @@ void ChordNode::handleGetNeighbours(const GetNeighboursMessage& message)
 {
   GetNeighboursResponseMessage response{ CommsVersion::V1 };
 
-  if (m_predecessor.has_value())
+  if (m_hasPredecessor)
   {
-    response = GetNeighboursResponseMessage{ CommsVersion::V1, m_successor, m_predecessor.value(), m_id, message.requestId() };
+    log("get neighbours with precessor");
+    response = GetNeighboursResponseMessage{ CommsVersion::V1, m_successor, m_predecessor, m_id, message.requestId() };
   }
   else
   {
@@ -445,6 +597,23 @@ void ChordNode::handleGetNeighboursResponse(const GetNeighboursResponseMessage& 
   m_getNeighboursPromises.erase(promiseIter);
 }
 
+void ChordNode::sendConnect(const NodeId& nodeId)
+{
+  sendConnect(nodeId, m_connectionManager->ip());
+}
+
+void ChordNode::sendConnect(const NodeId& nodeId, uint32_t ip)
+{
+  ConnectMessage message{ CommsVersion::V1, m_id, ip };
+
+  m_connectionManager->send(nodeId, message);
+}
+
+void ChordNode::handleConnectMessage(const ConnectMessage& message)
+{
+  m_connectionManager->insert(message.nodeId(), message.ip(), 0);
+}
+
 uint32_t ChordNode::getNextAvailableRequestId()
 {
   // Zero is a null value for requestId, so always skip it
@@ -464,21 +633,77 @@ uint32_t ChordNode::getNextAvailableRequestId()
   return 0;
 }
 
+void ChordNode::fixFingers()
+{
+  m_fingerTable.m_next++;
+
+  log("Fixing finger " + std::to_string(m_fingerTable.m_next));
+
+  if (m_fingerTable.m_next >= 160)
+  {
+    m_fingerTable.m_next = 0;
+  }
+
+  auto requestId = findSuccessor(m_fingerTable.m_fingers[m_fingerTable.m_next].m_end);
+
+  std::function<bool()> checkFutureTask = [this, requestId, tableIndex = m_fingerTable.m_next] () -> bool
+  {
+    auto it = m_findSuccessorFutures.find(requestId);
+
+    // if the future can't be found then do no load this task again.
+    if (it == m_findSuccessorFutures.end())
+    {
+      log("Fix fingers: could not find future for this request");
+      return true;
+    }
+
+    auto futureStatus = it->second.wait_for(std::chrono::milliseconds{20});
+
+    if (futureStatus != std::future_status::ready)
+    {
+      return false;
+    }
+    
+    m_fingerTable.m_fingers[tableIndex].m_nodeId = it->second.get();
+    log("got successor, finger " + std::to_string(tableIndex) + " nodeId set to " + m_fingerTable.m_fingers[tableIndex].m_nodeId.toString());
+
+    return true;
+  };
+
+  m_queue.putWork(checkFutureTask);
+}
+
 void ChordNode::stabilise()
 {
   log("stabilise");
-  std::future<Neighbours> successorNeighboursFuture = getNeighbours(m_successor);
 
-  Neighbours successorNeighbours = successorNeighboursFuture.get();
+  auto requestId = getNeighbours(m_successor);
 
-  if (successorNeighbours.hasPredecessor &&
-      successorNeighbours.predecessor > m_id &&
-      successorNeighbours.predecessor < m_successor)
+  std::function<bool()> checkFutureTask = [this, requestId] ()
   {
-    m_successor = successorNeighbours.predecessor;
-  }
+    auto it = m_getNeighboursFutures.find(requestId);
 
-  notify(m_successor);
+    if (it == m_getNeighboursFutures.end()) return true;
+
+    auto result = it->second.wait_for(std::chrono::milliseconds{20});
+
+    if (result != std::future_status::ready) return false;
+
+    Neighbours successorNeighbours = it->second.get();
+
+
+    if (successorNeighbours.hasPredecessor &&
+        containedInOpenInterval(m_id, m_successor, successorNeighbours.predecessor))
+    {
+      m_successor = successorNeighbours.predecessor;
+    }
+
+    notify(m_successor);
+    return true;
+  };
+
+  m_queue.putWork(checkFutureTask);
+
 }
 
 void ChordNode::log(const std::string& message)

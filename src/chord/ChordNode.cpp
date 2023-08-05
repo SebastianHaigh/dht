@@ -168,7 +168,11 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
     FindSuccessorResponseMessage response{ CommsVersion::V1, m_successor, m_id, m_connectionManager->ip(m_successor), message.requestId() };
 
     m_logger.log(m_logPrefix + "sending FindSuccessorResponse");
-    m_connectionManager->send(message.sourceNodeId(), response);
+
+    if (not m_connectionManager->send(message.sourceNodeId(), response))
+    {
+      findIp(message.sourceNodeId());
+    }
 
     return;
   }
@@ -192,6 +196,10 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
 
   m_logger.log(m_logPrefix + "sending FindSuccessorMessage");
   m_connectionManager->send(nodeId, messageToForward);
+  if (not m_connectionManager->send(nodeId, messageToForward))
+  {
+    findIp(nodeId);
+  }
 }
 
 void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& message)
@@ -214,7 +222,11 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
                                                    message.requestId() };
 
     m_logger.log(m_logPrefix + "sending FindSuccessorResponse");
-    m_connectionManager->send(it->second.m_chainingDestination, messageToForward);
+
+    if (not m_connectionManager->send(it->second.m_chainingDestination, messageToForward))
+    {
+      findIp(it->second.m_chainingDestination);
+    }
 
     m_pendingResponses.erase(it);
 
@@ -277,7 +289,11 @@ uint32_t ChordNode::findSuccessor(const NodeId& nodeToQuery, const NodeId& hash)
   FindSuccessorMessage message{ CommsVersion::V1, hash, m_id, requestId };
 
   m_logger.log(m_logPrefix + "sending FindSuccessorMessage");
-  m_connectionManager->send(nodeToQuery, message);
+
+  if (not m_connectionManager->send(nodeToQuery, message))
+  {
+    findIp(nodeToQuery);
+  }
 
   return requestId;
 }
@@ -320,7 +336,11 @@ uint32_t ChordNode::getNeighbours(const NodeId& nodeToQuery)
   GetNeighboursMessage message{ CommsVersion::V1, m_id, requestId };
 
   m_logger.log(m_logPrefix + "sending GetNeighboursMessage");
-  m_connectionManager->send(nodeToQuery, message);
+
+  if (not m_connectionManager->send(nodeToQuery, message))
+  {
+    findIp(nodeToQuery);
+  }
 
   return requestId;
 }
@@ -330,7 +350,11 @@ void ChordNode::notify(const NodeId& nodeId)
   NotifyMessage message{ CommsVersion::V1, m_id };
 
   m_logger.log(m_logPrefix + "sending NotifyMessage");
-  m_connectionManager->send(nodeId, message);
+
+  if (not m_connectionManager->send(nodeId, message))
+  {
+    findIp(nodeId);
+  }
 }
 
 const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
@@ -510,6 +534,23 @@ void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
       break;
     }
 
+    case MessageType::FIND_IP:
+    {
+      m_logger.log(m_logPrefix + "received find ip message") ;
+      FindIpMessage message{ CommsVersion::V1 };
+
+      message.decode(std::move(encoded));
+
+      std::function<bool()> work = [this, message]
+      {
+        m_logger.log(m_logPrefix + "handleFindIp task");
+        handleFindIp(message);
+        return true;
+      };
+
+      m_queue.putWork(work);
+      break;
+    }
     default:
     {
       m_logger.log(m_logPrefix + "received unknown message type: 0x");
@@ -569,7 +610,10 @@ void ChordNode::handleGetNeighbours(const GetNeighboursMessage& message)
   }
 
   m_logger.log(m_logPrefix + "sending GetNeigboursResponse");
-  m_connectionManager->send(message.sourceNodeId(), response);
+  if (not m_connectionManager->send(message.sourceNodeId(), response))
+  {
+    findIp(message.sourceNodeId());
+  }
 }
 
 void ChordNode::handleGetNeighboursResponse(const GetNeighboursResponseMessage& message)
@@ -615,6 +659,38 @@ void ChordNode::sendConnect(const NodeId& nodeId, uint32_t ip)
 void ChordNode::handleConnectMessage(const ConnectMessage& message)
 {
   m_connectionManager->insert(message.nodeId(), message.ip(), 0);
+}
+
+void ChordNode::findIp(const NodeId& nodeId)
+{
+  FindIpMessage message{ CommsVersion::V1, nodeId, m_id, m_connectionManager->ip(), 5 };
+
+  m_connectionManager->broadcast(message);
+}
+
+void ChordNode::handleFindIp(const FindIpMessage& message)
+{
+  uint32_t ip = m_connectionManager->ip(message.nodeId());
+
+  if (ip != 0 && message.timeToLive() != 0)
+  {
+    m_logger.log(m_logPrefix + "could not find Ip address, broadcasting again");
+    FindIpMessage messageToForward{ CommsVersion::V1,
+                                    message.nodeId(),
+                                    message.sourceNodeId(),
+                                    message.sourceNodeIp(),
+                                    message.timeToLive() - 1 };
+
+    m_connectionManager->broadcast(messageToForward);
+
+    return;
+  }
+
+  m_logger.log(m_logPrefix + "found ip address");
+
+  m_connectionManager->insert(message.sourceNodeId(), message.sourceNodeIp(), 0);
+
+  sendConnect(message.sourceNodeId(), ip);
 }
 
 uint32_t ChordNode::getNextAvailableRequestId()

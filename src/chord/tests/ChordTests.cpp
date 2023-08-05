@@ -55,6 +55,18 @@ class MockConnectionManager : public ConnectionManager_I
       return true;
     }
 
+    bool broadcast(const Message& message) override
+    {
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        auto encoded = message.encode();
+
+        m_simulatedNode.sendMessage(idIpPair.second, encoded.m_message, encoded.m_length);
+      }
+
+      return true;
+    }
+
     void registerReceiveHandler(tcp::OnReceiveCallback callback) override
     {
       m_onReceive = callback;

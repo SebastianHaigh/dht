@@ -338,6 +338,57 @@ void GetNeighboursResponseMessage::decode(const EncodedMessage& message)
   return m_requestId;
 }
 
+ConnectMessage::ConnectMessage(CommsVersion version,
+                               const NodeId& nodeId,
+                               uint32_t ip)
+  : Message(version, MessageType::CONNECT, sizeof(uint32_t) + sizeof(NodeId)),
+    m_nodeId(nodeId),
+    m_ip(ip)
+{
+}
+
+ConnectMessage::ConnectMessage(CommsVersion version)
+  : Message(version, MessageType::CONNECT, sizeof(uint32_t) + sizeof(NodeId)),
+    m_ip(0)
+{
+}
+
+[[nodiscard]] EncodedMessage ConnectMessage::encode() const
+{
+  EncodedMessage encoded = createEncodedMessage();
+
+  auto* payload_p = &encoded.m_message[8];
+
+  encodeSingleValue(&m_nodeId, payload_p);
+  payload_p += sizeof(NodeId);
+
+  encodeSingleValue(&m_ip, payload_p);
+
+  return std::move(encoded);
+}
+
+void ConnectMessage::decode(const EncodedMessage& message)
+{
+  decodeHeaders(message);
+
+  auto* payload_p = &message.m_message[8];
+
+  decodeSingleValue(payload_p, &m_nodeId);
+  payload_p += sizeof(NodeId);
+
+  decodeSingleValue(payload_p, &m_ip);
+}
+
+[[nodiscard]] const NodeId& ConnectMessage::nodeId() const
+{
+  return m_nodeId;
+}
+
+[[nodiscard]] uint32_t ConnectMessage::ip() const
+{
+  return m_ip;
+}
+
 FindIpMessage::FindIpMessage(CommsVersion version,
                              const NodeId& nodeId,
                              const NodeId& sourceNodeId,

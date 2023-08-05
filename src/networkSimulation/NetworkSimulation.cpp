@@ -121,8 +121,6 @@ void NetworkSimulator::sendMessage(uint32_t sourceIpAddress,
 
   if (nodeIp_p == m_nodeIdLookup.end()) return;
 
-  std::cout << "found node ip" << std::endl;
-
   for (auto& node : m_nodes)
   {
     if (node->nodeId() == nodeIp_p->second)

@@ -10,7 +10,8 @@ target_link_libraries(Chord
                       Hashing 
                       Tcp 
                       Async 
-                      Comms)
+                      Comms
+                      Logging)
 
 enable_testing()
 

@@ -16,17 +16,20 @@ namespace chord { namespace test {
 class MockConnectionManager : public ConnectionManager_I
 {
   public:
-    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node)
+    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node, logging::Logger logger)
       : m_nodeId(nodeId),
-        m_simulatedNode(node)
+        m_simulatedNode(node),
+        m_logger(std::move(logger)),
+        m_logPrefix(m_nodeId.toString() + ": ")
     {
     }
 
     bool send(const NodeId& nodeId, const Message& message) override
     {
-      std::cout << "[" << m_nodeId.toString() <<  "] MockConnectionManager: sending message to " << nodeId.toString() << std::endl;
+      m_logger.log(m_logPrefix + "sending message to " + nodeId.toString());
       uint32_t ip{ 0 };
       bool foundNode{ false };
+
       for (const auto& idIpPair : m_nodeIdToIp)
       {
         if (idIpPair.first == nodeId)
@@ -39,14 +42,10 @@ class MockConnectionManager : public ConnectionManager_I
 
       if (not foundNode)
       {
-        std::cout << "[" << m_nodeId.toString() <<  "] MockConnectionManager: could not find node " << nodeId.toString() << " failed to send message" << std::endl;
-        std::cout << "[" << m_nodeId.toString() <<  "] MockConnectionManager: I have the following " << m_nodeIdToIp.size() << " nodes: " << std::endl;
-        for (const auto& node : m_nodeIdToIp)
-        {
-          std::cout << "        " << node.first.toString() << std::endl;
-        }
+        m_logger.log(m_logPrefix + "could not find node " + nodeId.toString() + " failed to send message");
         return false;
       }
+      m_logger.log(m_logPrefix + "found ip for " + nodeId.toString() + " sending message to " + std::to_string(ip));
 
       auto encoded = message.encode();
 
@@ -57,11 +56,13 @@ class MockConnectionManager : public ConnectionManager_I
 
     bool broadcast(const Message& message) override
     {
+      m_logger.log(m_logPrefix + "broadcasting message");
       for (const auto& idIpPair : m_nodeIdToIp)
       {
         auto encoded = message.encode();
 
         m_simulatedNode.sendMessage(idIpPair.second, encoded.m_message, encoded.m_length);
+        m_logger.log(m_logPrefix + "message sent to " + idIpPair.first.toString() + "(" + std::to_string(idIpPair.second) + ") as part of broadcast");
       }
 
       return true;
@@ -73,6 +74,7 @@ class MockConnectionManager : public ConnectionManager_I
 
       NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
       {
+        m_logger.log(m_logPrefix + "received message");
         m_onReceive(message, messageLength);
       };
 
@@ -120,6 +122,8 @@ class MockConnectionManager : public ConnectionManager_I
     std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
 
     tcp::OnReceiveCallback m_onReceive;
+    logging::Logger m_logger;
+    const std::string m_logPrefix;
 };
 
 class Timer {
@@ -211,9 +215,9 @@ TEST_CASE("Test the creation of a chord node")
   NetworkSimulator networkSimulator;
   logging::Log log;
 
-  ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  ConnectionManagerFactory factory = [&networkSimulator, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
+    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress), log.makeLogger("CONMAN"));
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
@@ -239,9 +243,9 @@ TEST_CASE("Test fixing the fingers")
   NetworkSimulator networkSimulator;
   logging::Log log;
 
-  ConnectionManagerFactory factory = [&networkSimulator] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  ConnectionManagerFactory factory = [&networkSimulator, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress));
+    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress), log.makeLogger("CONMAN"));
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
@@ -258,9 +262,24 @@ TEST_CASE("Test fixing the fingers")
   node2.join("200.178.0.5");
 
   std::this_thread::sleep_for(std::chrono::seconds{10});
+  ChordNode node3{"node3", "200.178.0.15", 0, factory, log.makeLogger("CHORDNODE")};
+  node3.join("200.178.0.10");
+  std::this_thread::sleep_for(std::chrono::seconds{5});
+
+  ChordNode node4{"node4", "200.178.0.20", 0, factory, log.makeLogger("CHORDNODE")};
+  node4.join("200.178.0.10");
+  std::this_thread::sleep_for(std::chrono::seconds{5});
+
+  ChordNode node5{"node5", "200.178.0.25", 0, factory, log.makeLogger("CHORDNODE")};
+  node5.join("200.178.0.15");
+  std::this_thread::sleep_for(std::chrono::seconds{40});
+
   std::cout << "node0 " << node0.getId().toString() << " succ " << node0.getSuccessorId().toString() << ", pred " << node0.getPredecessorId().toString() << std::endl;
   std::cout << "node1 " << node1.getId().toString() << " succ " << node1.getSuccessorId().toString() << ", pred " << node1.getPredecessorId().toString()<< std::endl;
   std::cout << "node2 " << node2.getId().toString() << " succ " << node2.getSuccessorId().toString() << ", pred " << node2.getPredecessorId().toString()<< std::endl;
+  std::cout << "node3 " << node3.getId().toString() << " succ " << node3.getSuccessorId().toString() << ", pred " << node3.getPredecessorId().toString()<< std::endl;
+  std::cout << "node4 " << node4.getId().toString() << " succ " << node4.getSuccessorId().toString() << ", pred " << node4.getPredecessorId().toString()<< std::endl;
+  std::cout << "node5 " << node5.getId().toString() << " succ " << node5.getSuccessorId().toString() << ", pred " << node5.getPredecessorId().toString()<< std::endl;
 
   std::this_thread::sleep_for(std::chrono::seconds{10});
 //  REQUIRE(node0.getSuccessorId() == node1.getPredecessorId());

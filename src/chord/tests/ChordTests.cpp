@@ -230,12 +230,14 @@ TEST_CASE("Test the creation of a chord node")
 
   node1.join("200.178.0.1");
 
-  std::this_thread::sleep_for(std::chrono::seconds{30});
+  std::this_thread::sleep_for(std::chrono::seconds{10});
 
   std::cout << "node0 succ " << node0.getSuccessorId().toString() << ", pred " << node0.getPredecessorId().toString() << std::endl;
   std::cout << "node1 succ " << node1.getSuccessorId().toString() << ", pred " << node1.getPredecessorId().toString()<< std::endl;
-  CHECK(node0.getSuccessorId() == node1.getPredecessorId());
-  CHECK(node1.getPredecessorId() == node0.getSuccessorId());
+  CHECK(node0.getSuccessorId() == node1.getId());
+  CHECK(node0.getPredecessorId() == node1.getId());
+  CHECK(node1.getSuccessorId() == node0.getId());
+  CHECK(node1.getPredecessorId() == node0.getId());
 }
 
 TEST_CASE("Test fixing the fingers")

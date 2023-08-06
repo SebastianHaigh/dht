@@ -104,8 +104,8 @@ class ChordNode
     void handleGetNeighbours(const GetNeighboursMessage& message);
     void handleGetNeighboursResponse(const GetNeighboursResponseMessage& message);
 
-    void sendConnect(const NodeId& nodeId);
-    void sendConnect(const NodeId& nodeId, uint32_t ip);
+    void sendConnect(const NodeId& destination);
+    void sendConnect(const NodeId& destination, const NodeId& nodeId, uint32_t ip);
     void handleConnectMessage(const ConnectMessage& message);
 
     void findIp(const NodeId& nodeId);

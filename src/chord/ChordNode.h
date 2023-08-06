@@ -75,6 +75,7 @@ class ChordNode
               const ConnectionManagerFactory& factory,
               logging::Logger logger);
 
+    ~ChordNode();
     void create();
     void join(const std::string &knownNodeIpAddress);
     const NodeId& getId() const;
@@ -173,6 +174,7 @@ class ChordNode
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastManageTime;
 
     std::thread m_workThread;
+    bool m_running;
 
 };
 

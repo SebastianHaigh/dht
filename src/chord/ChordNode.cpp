@@ -20,7 +20,8 @@ ChordNode::ChordNode(const std::string& nodeName,
     m_port{port},
     m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port)),
     m_logger(std::move(logger)),
-    m_logPrefix(nodeName + " - " + m_id.toString() + ": ")
+    m_logPrefix(nodeName + " - " + m_id.toString() + ": "),
+    m_running(true)
 {
   ::chord::initialiseFingerTable(m_fingerTable, m_id);
 
@@ -32,6 +33,12 @@ ChordNode::ChordNode(const std::string& nodeName,
   m_connectionManager->registerReceiveHandler(onReceiveCallback);
 
   m_workThread = std::thread{&ChordNode::workThread, this};
+}
+
+ChordNode::~ChordNode()
+{
+  m_running = false;
+  m_workThread.join();
 }
 
 uint32_t ChordNode::convertIpAddressToInteger(const std::string& ipAddress)
@@ -143,7 +150,7 @@ void ChordNode::receive(uint8_t* message, std::size_t messageLength)
 
 void ChordNode::workThread()
 {
-  while (true)
+  while (m_running)
   {
     m_queue.doNextWork();
     if (std::chrono::high_resolution_clock::now() - m_lastManageTime > std::chrono::seconds{1})

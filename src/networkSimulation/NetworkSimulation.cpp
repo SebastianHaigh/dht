@@ -150,7 +150,6 @@ SimulatedNode::SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSe
     m_ipAddress(ipAddress),
     m_onSendCallback(std::move(onSendCallback))
 {
-  std::cout << "SimulatedNode: created without receive handler" << std::endl;
 }
 
 SimulatedNode::SimulatedNode(int nodeId,
@@ -162,7 +161,6 @@ SimulatedNode::SimulatedNode(int nodeId,
     m_onSendCallback(std::move(onSendCallback)),
     m_receiveHandler(std::move(receiveHandler))
 {
-  std::cout << "SimulatedNode: created with receive handler" << std::endl;
 }
 
 void SimulatedNode::run()
@@ -171,19 +169,13 @@ void SimulatedNode::run()
 
 void SimulatedNode::registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler)
 {
-  std::cout << "[" << nodeId() << "] SimulatedNode: receive handler registered" << std::endl;
   m_receiveHandler = std::move(nodeReceiveHandler);
 }
 
 void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
 {
-  std::cout << "[" << nodeId() << "] SimulatedNode: received message, calling handler" << std::endl;
-
   if (m_receiveHandler)
     m_receiveHandler(sourceIpAddress, message, messageLength);
-  else
-    std::cout << "[" << nodeId() << "] SimulatedNode: receive message failed, no handler" << std::endl;
-
 }
 
 void SimulatedNode::sendMessage(uint32_t destinationIpAddress,

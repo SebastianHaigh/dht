@@ -651,16 +651,18 @@ void ChordNode::handleGetNeighboursResponse(const GetNeighboursResponseMessage& 
   m_getNeighboursPromises.erase(promiseIter);
 }
 
-void ChordNode::sendConnect(const NodeId& nodeId)
+void ChordNode::sendConnect(const NodeId& destination)
 {
-  sendConnect(nodeId, m_connectionManager->ip());
+  sendConnect(destination, m_id, m_connectionManager->ip());
 }
 
-void ChordNode::sendConnect(const NodeId& nodeId, uint32_t ip)
+void ChordNode::sendConnect(const NodeId& destination, const NodeId& nodeId, uint32_t ip)
 {
-  ConnectMessage message{ CommsVersion::V1, m_id, ip };
+  ConnectMessage message{ CommsVersion::V1, nodeId, ip };
 
-  m_connectionManager->send(nodeId, message);
+  m_logger.log(m_logPrefix + "sending connect message to " + destination.toString() + " sending node " + nodeId.toString() + ", ip " + std::to_string(ip));
+
+  m_connectionManager->send(destination, message);
 }
 
 void ChordNode::handleConnectMessage(const ConnectMessage& message)
@@ -697,7 +699,7 @@ void ChordNode::handleFindIp(const FindIpMessage& message)
 
   m_connectionManager->insert(message.sourceNodeId(), message.sourceNodeIp(), 0);
 
-  sendConnect(message.sourceNodeId(), ip);
+  sendConnect(message.sourceNodeId(), message.nodeId(), ip);
 }
 
 uint32_t ChordNode::getNextAvailableRequestId()

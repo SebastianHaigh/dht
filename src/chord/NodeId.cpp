@@ -224,22 +224,86 @@ bool NodeId::operator!=(const NodeId& other) const
 
 bool NodeId::operator<(const NodeId& other) const
 {
-  return memcmp(m_id, other.m_id, 20) < 0;
+  auto* this_p = &m_id[19];
+  auto* other_p = &other.m_id[19];
+
+  int i{0};
+  while (i < 20)
+  {
+    if (*this_p < *other_p) return true;
+    if (*this_p > *other_p) return false;
+
+    // if we get here then these bytes were equal, so we have to check the next bytes
+    this_p++;
+    other_p++;
+    i++;
+  }
+
+  // if we get here then all of the bytes were equal, return false
+  return false;
 }
 
 bool NodeId::operator>(const NodeId& other) const
 {
-  return memcmp(m_id, other.m_id, 20) > 0;
+  auto* this_p = &m_id[19];
+  auto* other_p = &other.m_id[19];
+
+  int i{0};
+  while (i < 20)
+  {
+    if (*this_p < *other_p) return false;
+    if (*this_p > *other_p) return true;
+
+    // if we get here then these bytes were equal, so we have to check the next bytes
+    this_p++;
+    other_p++;
+    i++;
+  }
+
+  // if we get here then all of the bytes were equal, return false
+  return false;
 }
 
 bool NodeId::operator<=(const NodeId& other) const
 {
-  return memcmp(m_id, other.m_id, 20) <= 0;
+  auto* this_p = &m_id[19];
+  auto* other_p = &other.m_id[19];
+
+  int i{0};
+  while (i < 20)
+  {
+    if (*this_p < *other_p) return true;
+    if (*this_p > *other_p) return false;
+
+    // if we get here then these bytes were equal, so we have to check the next bytes
+    this_p++;
+    other_p++;
+    i++;
+  }
+
+  // if we get here then all of the bytes were equal, return true
+  return true;
 }
 
 bool NodeId::operator>=(const NodeId& other) const
 {
-  return memcmp(m_id, other.m_id, 20) >= 0;
+  auto* this_p = &m_id[19];
+  auto* other_p = &other.m_id[19];
+
+  int i{0};
+  while (i < 20)
+  {
+    if (*this_p < *other_p) return false;
+    if (*this_p > *other_p) return true;
+
+    // if we get here then these bytes were equal, so we have to check the next bytes
+    this_p++;
+    other_p++;
+    i++;
+  }
+
+  // if we get here then all of the bytes were equal, return true
+  return true;
 }
 
 NodeId NodeId::operator+(const NodeId& other) const

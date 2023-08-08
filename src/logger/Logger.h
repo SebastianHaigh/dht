@@ -9,12 +9,17 @@
 
 namespace logging {
 
+struct LogStatement
+{
+  std::string m_statement;
+};
+
 class WorkThreadQueue
 {
   public:
     WorkThreadQueue() = default;
 
-    bool putWork(std::function<std::string()> workItem)
+    bool putWork(LogStatement&& workItem)
     {
       size_t putIndex = m_tail.load();
       size_t nextIndex = (putIndex + 1) % 100;
@@ -29,7 +34,7 @@ class WorkThreadQueue
       return true;
     }
 
-    std::string getNextWork()
+    LogStatement getNextWork()
     {
       size_t readIndex = m_head.load();
       size_t nextIndex = (readIndex + 1) % 100;
@@ -41,17 +46,17 @@ class WorkThreadQueue
 
       m_head.store(nextIndex);
 
-      return std::move(m_workItems[readIndex]());
+      return std::move(m_workItems[readIndex]);
     }
 
     bool hasWork()
     {
-      return (m_head.load(std::memory_order_relaxed) != m_tail.load(std::memory_order_relaxed));
+      return (m_head.load() != m_tail.load());
     }
 
   private:
-    std::array<std::function<std::string()>, 100> m_workItems;
-    size_t m_ringSize = 100;
+    std::array<LogStatement, 1000> m_workItems;
+    size_t m_ringSize = 1000;
     std::atomic<size_t> m_head{0};
     std::atomic<size_t> m_tail{0};
 };
@@ -62,10 +67,11 @@ class Logger
     explicit Logger(WorkThreadQueue& workQueue,
                     std::string name);
 
-    void log(const std::string& message);
+    void log(std::string&& message);
 
   private:
     const std::string m_name;
+    const std::string m_logPrefix;
     WorkThreadQueue& m_queue;
 };
 
@@ -74,7 +80,7 @@ class Log
   public:
     Log();
     ~Log();
-    Logger makeLogger(const std::string& name);
+    std::unique_ptr<Logger> makeLogger(const std::string& name);
 
   private:
     void threadFunction();

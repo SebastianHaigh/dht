@@ -31,7 +31,7 @@ TEST_CASE("Join Message can be encoded and decoded")
 
   JoinMessage decoded{ CommsVersion::V1 };
 
-  decoded.decode(encoded);
+  decoded.decode(std::move(encoded));
 
   CHECK(decoded.version() == CommsVersion::V1);
   CHECK(decoded.type() == MessageType::JOIN);

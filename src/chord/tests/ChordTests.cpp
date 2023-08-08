@@ -299,7 +299,7 @@ TEST_CASE("Chord messaging test")
 
   FindSuccessorMessage decodedMessage{CommsVersion::V1};
 
-  decodedMessage.decode(encoded);
+  decodedMessage.decode(std::move(encoded));
 
   REQUIRE(decodedMessage.queryNodeId() == nodeId);
   REQUIRE(decodedMessage.sourceNodeId() == sourceNodeId);

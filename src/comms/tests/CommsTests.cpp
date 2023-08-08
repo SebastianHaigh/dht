@@ -21,7 +21,7 @@ TEST_CASE("Join Message can be encoded and decoded")
 
   // PAYLOAD LENGTH
   CHECK(*msg_p++ == 0x00);
-  CHECK(*msg_p++ == 0x04);
+  CHECK(*msg_p++ == 0x08);
 
   // PAYLOAD
   CHECK(*msg_p++ == 0x67);
@@ -35,7 +35,7 @@ TEST_CASE("Join Message can be encoded and decoded")
 
   CHECK(decoded.version() == CommsVersion::V1);
   CHECK(decoded.type() == MessageType::JOIN);
-  CHECK(decoded.payloadLength() == 4);
+  CHECK(decoded.payloadLength() == 8);
 
   CHECK(decoded.ip() == 0x67000001);
 }

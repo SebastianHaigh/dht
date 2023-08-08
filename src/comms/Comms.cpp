@@ -117,7 +117,7 @@ EncodedMessage JoinMessage::encode() const
   return std::move(encoded);
 }
 
-void JoinMessage::decode(const EncodedMessage& message)
+void JoinMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -171,7 +171,7 @@ EncodedMessage JoinResponseMessage::encode() const
   return std::move(encoded);
 }
 
-void JoinResponseMessage::decode(const EncodedMessage& message)
+void JoinResponseMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -220,7 +220,7 @@ EncodedMessage PositionMessage::encode() const
   return std::move(encoded);
 }
 
-void PositionMessage::decode(const EncodedMessage& message)
+void PositionMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 

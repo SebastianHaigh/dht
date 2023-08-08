@@ -18,7 +18,7 @@ class FindSuccessorMessage : public Message
     ~FindSuccessorMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& queryNodeId() const;
     [[nodiscard]] const NodeId& sourceNodeId() const;
@@ -42,7 +42,7 @@ class FindSuccessorResponseMessage : public Message
     ~FindSuccessorResponseMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& nodeId() const;
     [[nodiscard]] const NodeId& sourceNodeId() const;
@@ -65,7 +65,7 @@ class NotifyMessage : public Message
     ~NotifyMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& nodeId() const;
 
@@ -83,7 +83,7 @@ class GetNeighboursMessage : public Message
     ~GetNeighboursMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& sourceNodeId() const;
     [[nodiscard]] uint32_t requestId() const;
@@ -111,7 +111,7 @@ class GetNeighboursResponseMessage : public Message
     ~GetNeighboursResponseMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& successor() const;
     [[nodiscard]] const NodeId& predecessor() const;
@@ -138,7 +138,7 @@ class ConnectMessage : public Message
     ~ConnectMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& nodeId() const;
     [[nodiscard]] uint32_t ip() const;
@@ -161,7 +161,7 @@ class FindIpMessage : public Message
     ~FindIpMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] const NodeId& nodeId() const;
     [[nodiscard]] const NodeId& sourceNodeId() const;

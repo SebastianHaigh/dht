@@ -145,7 +145,7 @@ void ChordNode::receive(uint8_t* message, std::size_t messageLength)
   m_logger.log(m_logPrefix + "receiving message");
   EncodedMessage encoded{message, messageLength};
 
-  handleReceivedMessage(encoded);
+  handleReceivedMessage(std::move(encoded));
 }
 
 void ChordNode::workThread()
@@ -389,7 +389,7 @@ void ChordNode::updateFingerTable(const ChordNode &node, uint16_t i)
   
 }
 
-void ChordNode::handleReceivedMessage(const EncodedMessage& encoded)
+void ChordNode::handleReceivedMessage(EncodedMessage&& encoded)
 {
   // Ignore comms version for now, this will probably be handled differently at a later time
 

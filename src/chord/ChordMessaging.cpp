@@ -37,7 +37,7 @@ FindSuccessorMessage::FindSuccessorMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void FindSuccessorMessage::decode(const EncodedMessage& message)
+void FindSuccessorMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -107,7 +107,7 @@ FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void FindSuccessorResponseMessage::decode(const EncodedMessage& message)
+void FindSuccessorResponseMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -169,7 +169,7 @@ NotifyMessage::NotifyMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void NotifyMessage::decode(const EncodedMessage& message)
+void NotifyMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -213,7 +213,7 @@ GetNeighboursMessage::GetNeighboursMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void GetNeighboursMessage::decode(const EncodedMessage& message)
+void GetNeighboursMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -292,7 +292,7 @@ GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void GetNeighboursResponseMessage::decode(const EncodedMessage& message)
+void GetNeighboursResponseMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -367,7 +367,7 @@ ConnectMessage::ConnectMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void ConnectMessage::decode(const EncodedMessage& message)
+void ConnectMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
@@ -429,7 +429,7 @@ FindIpMessage::FindIpMessage(CommsVersion version)
   return std::move(encoded);
 }
 
-void FindIpMessage::decode(const EncodedMessage& message)
+void FindIpMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 

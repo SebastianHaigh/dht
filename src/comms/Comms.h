@@ -85,7 +85,7 @@ class Message
     [[nodiscard]] std::size_t payloadLength() const;
 
     [[nodiscard]] virtual EncodedMessage encode() const = 0;
-    virtual void decode(const EncodedMessage& message) = 0;
+    virtual void decode(EncodedMessage&& message) = 0;
   
   protected:
     [[nodiscard]] EncodedMessage createEncodedMessage() const;
@@ -106,7 +106,7 @@ class JoinMessage : public Message
     ~JoinMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] uint32_t ip() const;
     [[nodiscard]] uint32_t requestId() const;
@@ -125,7 +125,7 @@ class JoinResponseMessage : public Message
     ~JoinResponseMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] uint32_t ip() const;
     [[nodiscard]] uint32_t requestId() const;
@@ -144,7 +144,7 @@ class PositionMessage : public Message
     ~PositionMessage() = default;
 
     [[nodiscard]] EncodedMessage encode() const override;
-    void decode(const EncodedMessage& message) override;
+    void decode(EncodedMessage&& message) override;
 
     [[nodiscard]] uint32_t ip() const;
     [[nodiscard]] std::size_t numNeighbours() const;

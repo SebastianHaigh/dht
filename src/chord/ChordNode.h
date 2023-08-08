@@ -95,7 +95,7 @@ class ChordNode
     void initialiseFingerTable();
     void updateFingerTable(const ChordNode& node, uint16_t i);
 
-    void handleReceivedMessage(const EncodedMessage& encoded);
+    void handleReceivedMessage(EncodedMessage&& encoded);
 
     void handleJoinRequest(const JoinMessage& message);
     void handleJoinResponse(const JoinResponseMessage& message);

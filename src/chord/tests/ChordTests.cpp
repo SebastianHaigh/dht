@@ -10,13 +10,12 @@
 #include "../NodeId.h"
 #include "../../networkSimulation/NetworkSimulation.h"
 
-
 namespace chord { namespace test {
 
 class MockConnectionManager : public ConnectionManager_I
 {
   public:
-    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node, logging::Logger logger)
+    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node, std::unique_ptr<logging::Logger> logger)
       : m_nodeId(nodeId),
         m_simulatedNode(node),
         m_logger(std::move(logger)),
@@ -26,7 +25,7 @@ class MockConnectionManager : public ConnectionManager_I
 
     bool send(const NodeId& nodeId, const Message& message) override
     {
-      m_logger.log(m_logPrefix + "sending message to " + nodeId.toString());
+      m_logger->log(m_logPrefix + "sending message to " + nodeId.toString());
       uint32_t ip{ 0 };
       bool foundNode{ false };
 
@@ -42,10 +41,10 @@ class MockConnectionManager : public ConnectionManager_I
 
       if (not foundNode)
       {
-        m_logger.log(m_logPrefix + "could not find node " + nodeId.toString() + " failed to send message");
+        m_logger->log(m_logPrefix + "could not find node " + nodeId.toString() + " failed to send message");
         return false;
       }
-      m_logger.log(m_logPrefix + "found ip for " + nodeId.toString() + " sending message to " + std::to_string(ip));
+      m_logger->log(m_logPrefix + "found ip for " + nodeId.toString() + " sending message to " + std::to_string(ip));
 
       auto encoded = message.encode();
 
@@ -56,13 +55,13 @@ class MockConnectionManager : public ConnectionManager_I
 
     bool broadcast(const Message& message) override
     {
-      m_logger.log(m_logPrefix + "broadcasting message");
+      m_logger->log(m_logPrefix + "broadcasting message");
       for (const auto& idIpPair : m_nodeIdToIp)
       {
         auto encoded = message.encode();
 
         m_simulatedNode.sendMessage(idIpPair.second, encoded.m_message, encoded.m_length);
-        m_logger.log(m_logPrefix + "message sent to " + idIpPair.first.toString() + "(" + std::to_string(idIpPair.second) + ") as part of broadcast");
+        m_logger->log(m_logPrefix + "message sent to " + idIpPair.first.toString() + "(" + std::to_string(idIpPair.second) + ") as part of broadcast");
       }
 
       return true;
@@ -74,7 +73,6 @@ class MockConnectionManager : public ConnectionManager_I
 
       NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
       {
-        m_logger.log(m_logPrefix + "received message");
         m_onReceive(message, messageLength);
       };
 
@@ -122,7 +120,7 @@ class MockConnectionManager : public ConnectionManager_I
     std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
 
     tcp::OnReceiveCallback m_onReceive;
-    logging::Logger m_logger;
+    std::unique_ptr<logging::Logger> m_logger;
     const std::string m_logPrefix;
 };
 

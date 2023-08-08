@@ -73,7 +73,7 @@ class ChordNode
               const std::string& ip,
               uint16_t port,
               const ConnectionManagerFactory& factory,
-              logging::Logger logger);
+              std::unique_ptr<logging::Logger> logger);
 
     ~ChordNode();
     void create();
@@ -158,7 +158,7 @@ class ChordNode
       NodeId m_chainingDestination;
     };
 
-    logging::Logger m_logger;
+    std::unique_ptr<logging::Logger> m_logger;
     const std::string m_logPrefix;
 
     std::unordered_map<uint32_t, PendingMessageResponse> m_pendingResponses;

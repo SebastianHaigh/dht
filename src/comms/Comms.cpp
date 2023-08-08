@@ -88,7 +88,7 @@ void Message::decodeHeaders(const EncodedMessage& encodedMessage)
 JoinMessage::JoinMessage(CommsVersion version)
   : Message{version,
             MessageType::JOIN,
-            4},
+            8},
     m_ip(0),
     m_requestId(0)
 {
@@ -97,7 +97,7 @@ JoinMessage::JoinMessage(CommsVersion version)
 JoinMessage::JoinMessage(CommsVersion version, uint32_t ip, uint32_t requestId)
   : Message{version,
             MessageType::JOIN,
-            4},
+            8},
     m_ip(ip),
     m_requestId(requestId)
 {
@@ -142,7 +142,7 @@ void JoinMessage::decode(const EncodedMessage& message)
 JoinResponseMessage::JoinResponseMessage(CommsVersion version)
   : Message{version,
             MessageType::JOIN_RESPONSE,
-            4},
+            8},
     m_ip(0),
     m_requestId(0)
 {
@@ -151,7 +151,7 @@ JoinResponseMessage::JoinResponseMessage(CommsVersion version)
 JoinResponseMessage::JoinResponseMessage(CommsVersion version, uint32_t ip, uint32_t requestId)
   : Message{version,
             MessageType::JOIN_RESPONSE,
-            4},
+            8},
     m_ip(ip),
     m_requestId(requestId)
 {

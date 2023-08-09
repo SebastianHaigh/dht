@@ -38,6 +38,7 @@ ChordNode::ChordNode(const std::string& nodeName,
 ChordNode::~ChordNode()
 {
   m_running = false;
+  m_connectionManager->stop();
   m_workThread.join();
 }
 

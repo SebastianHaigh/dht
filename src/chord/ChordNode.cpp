@@ -380,18 +380,6 @@ const NodeId &ChordNode::closestPrecedingFinger(const NodeId &id)
   return m_id;
 }
 
-void ChordNode::initialiseFingerTable()
-{
-  for (int i = 0; i < 160; i++)
-  {
-  }
-}
-
-void ChordNode::updateFingerTable(const ChordNode &node, uint16_t i)
-{
-  
-}
-
 void ChordNode::handleReceivedMessage(EncodedMessage&& encoded)
 {
   // Ignore comms version for now, this will probably be handled differently at a later time

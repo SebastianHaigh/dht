@@ -95,9 +95,6 @@ class ChordNode
     void doFindSuccessor(const FindSuccessorMessage& message);
     void handleFindSuccessorResponse(const FindSuccessorResponseMessage& message);
 
-    void initialiseFingerTable();
-    void updateFingerTable(const ChordNode& node, uint16_t i);
-
     void handleReceivedMessage(EncodedMessage&& encoded);
 
     void handleJoinRequest(const JoinMessage& message);

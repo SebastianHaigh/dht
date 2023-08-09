@@ -664,9 +664,11 @@ void ChordNode::findIp(const NodeId& nodeId)
 
 void ChordNode::handleFindIp(const FindIpMessage& message)
 {
+  if (message.timeToLive() == 0) return;
+
   uint32_t ip = m_connectionManager->ip(message.nodeId());
 
-  if (ip != 0 && message.timeToLive() != 0)
+  if (ip == 0)
   {
     m_logger->log(m_logPrefix + "could not find ip address, broadcasting again, ttl " + std::to_string(message.timeToLive()));
     FindIpMessage messageToForward{ CommsVersion::V1,

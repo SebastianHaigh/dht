@@ -78,7 +78,10 @@ class MockConnectionManager : public ConnectionManager_I
 
       NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
       {
-        m_onReceive(message, messageLength);
+        if (m_onReceive)
+        {
+          m_onReceive(message, messageLength);
+        }
       };
 
       m_simulatedNode.registerReceiveHandler(handler);

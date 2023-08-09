@@ -23,6 +23,11 @@ class MockConnectionManager : public ConnectionManager_I
     {
     }
 
+    ~MockConnectionManager()
+    {
+      stop();
+    }
+
     bool send(const NodeId& nodeId, const Message& message) override
     {
       m_logger->log(m_logPrefix + "sending message to " + nodeId.toString());
@@ -88,11 +93,16 @@ class MockConnectionManager : public ConnectionManager_I
       }
 
       m_nodeIdToIp.emplace_back(id, ipAddress);
-
     }
 
     void remove(const NodeId& id) override
     {
+    }
+
+    void stop() override
+    {
+      m_simulatedNode.cancelReceiveHandler();
+      m_onReceive = nullptr;
     }
 
     [[nodiscard]] uint32_t ip() const override

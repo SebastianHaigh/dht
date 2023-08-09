@@ -18,6 +18,7 @@ class ConnectionManager_I
     virtual void registerReceiveHandler(tcp::OnReceiveCallback callback) = 0;
     virtual void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) = 0;
     virtual void remove(const NodeId& id) = 0;
+    virtual void stop() = 0;
     [[nodiscard]] virtual uint32_t ip() const = 0;
     [[nodiscard]] virtual uint32_t ip(const NodeId& nodeId) const = 0;
 };
@@ -40,6 +41,8 @@ class ConnectionManager : public ConnectionManager_I
     void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override;
 
     void remove(const NodeId& id) override;
+
+    void stop() override { };
 
     [[nodiscard]] uint32_t ip() const override;
 

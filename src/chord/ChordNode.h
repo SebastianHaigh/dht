@@ -50,7 +50,10 @@ class WorkThreadQueue
       }
 
       if (not m_workItems[readIndex]())
+      {
         putWork(std::move(m_workItems[readIndex]));
+        m_workItems[readIndex] = nullptr;
+      }
       m_head.store(nextIndex);
     }
 

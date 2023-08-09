@@ -23,6 +23,7 @@ class SimulatedNode {
     [[nodiscard]] uint32_t ip() const;
 
     void registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler);
+    void cancelReceiveHandler();
 
     void receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength);
 

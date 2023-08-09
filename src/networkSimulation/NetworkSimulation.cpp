@@ -172,6 +172,11 @@ void SimulatedNode::registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler
   m_receiveHandler = std::move(nodeReceiveHandler);
 }
 
+void SimulatedNode::cancelReceiveHandler()
+{
+  m_receiveHandler = nullptr;
+}
+
 void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
 {
   if (m_receiveHandler)

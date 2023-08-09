@@ -232,26 +232,19 @@ TEST_CASE("Test the creation of a chord node")
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
-
-  // Create another node and join the network that is currently formed by the first node
-
-  ChordNode node1{"node1", "200.178.0.5", 0, factory, log.makeLogger("CHORDNODE")};
-
   node0.create();
 
+  ChordNode node1{"node1", "200.178.0.5", 0, factory, log.makeLogger("CHORDNODE")};
   node1.join("200.178.0.1");
-
   std::this_thread::sleep_for(std::chrono::seconds{10});
 
-  std::cout << "node0 succ " << node0.getSuccessorId().toString() << ", pred " << node0.getPredecessorId().toString() << std::endl;
-  std::cout << "node1 succ " << node1.getSuccessorId().toString() << ", pred " << node1.getPredecessorId().toString()<< std::endl;
   CHECK(node0.getSuccessorId() == node1.getId());
   CHECK(node0.getPredecessorId() == node1.getId());
   CHECK(node1.getSuccessorId() == node0.getId());
   CHECK(node1.getPredecessorId() == node0.getId());
 }
 
-TEST_CASE("Test fixing the fingers")
+TEST_CASE("Create a chord ring with 6 nodes")
 {
   NetworkSimulator networkSimulator;
   logging::Log log;
@@ -262,19 +255,16 @@ TEST_CASE("Test fixing the fingers")
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
-  ChordNode node1{"node1", "200.178.0.5", 0, factory, log.makeLogger("CHORDNODE")};
-  ChordNode node2{"node2", "200.178.0.10", 0, factory, log.makeLogger("CHORDNODE")};
   node0.create();
 
+  ChordNode node1{"node1", "200.178.0.5", 0, factory, log.makeLogger("CHORDNODE")};
   node1.join("200.178.0.1");
-
   std::this_thread::sleep_for(std::chrono::seconds{10});
-  std::cout << "node0 " << node0.getId().toString() << " succ " << node0.getSuccessorId().toString() << ", pred " << node0.getPredecessorId().toString() << std::endl;
-  std::cout << "node1 " << node1.getId().toString() << " succ " << node1.getSuccessorId().toString() << ", pred " << node1.getPredecessorId().toString()<< std::endl;
 
+  ChordNode node2{"node2", "200.178.0.10", 0, factory, log.makeLogger("CHORDNODE")};
   node2.join("200.178.0.5");
-
   std::this_thread::sleep_for(std::chrono::seconds{10});
+
   ChordNode node3{"node3", "200.178.0.15", 0, factory, log.makeLogger("CHORDNODE")};
   node3.join("200.178.0.10");
   std::this_thread::sleep_for(std::chrono::seconds{5});
@@ -285,18 +275,33 @@ TEST_CASE("Test fixing the fingers")
 
   ChordNode node5{"node5", "200.178.0.25", 0, factory, log.makeLogger("CHORDNODE")};
   node5.join("200.178.0.15");
-  std::this_thread::sleep_for(std::chrono::seconds{40});
-
-  std::cout << "node0 " << node0.getId().toString() << " succ " << node0.getSuccessorId().toString() << ", pred " << node0.getPredecessorId().toString() << std::endl;
-  std::cout << "node1 " << node1.getId().toString() << " succ " << node1.getSuccessorId().toString() << ", pred " << node1.getPredecessorId().toString()<< std::endl;
-  std::cout << "node2 " << node2.getId().toString() << " succ " << node2.getSuccessorId().toString() << ", pred " << node2.getPredecessorId().toString()<< std::endl;
-  std::cout << "node3 " << node3.getId().toString() << " succ " << node3.getSuccessorId().toString() << ", pred " << node3.getPredecessorId().toString()<< std::endl;
-  std::cout << "node4 " << node4.getId().toString() << " succ " << node4.getSuccessorId().toString() << ", pred " << node4.getPredecessorId().toString()<< std::endl;
-  std::cout << "node5 " << node5.getId().toString() << " succ " << node5.getSuccessorId().toString() << ", pred " << node5.getPredecessorId().toString()<< std::endl;
-
   std::this_thread::sleep_for(std::chrono::seconds{10});
-//  REQUIRE(node0.getSuccessorId() == node1.getPredecessorId());
-//  REQUIRE(node1.getPredecessorId() == node0.getSuccessorId());
+
+  // After the ring is formed the order should be
+  // 71b0bd61d12a0d29f0e8f7af0ce9fc991343cf47 (node 4)
+  // 722a855dcfbb4543092cd431d3168e004668f47f (node 0)
+  // 79055d481dc8552200d971aabedefd4fd6f19513 (node 5)
+  // 93224866bab37a6af0693b9d7014f8b19d50e336 (node 3)
+  // 9a4566381f781b1914de0135418669f40594c136 (node 1)
+  // cc24eea4834854624e1824fc1198373876848196 (node 2)
+
+  CHECK(node0.getPredecessorId() == node4.getId());
+  CHECK(node0.getSuccessorId() == node5.getId());
+
+  CHECK(node1.getPredecessorId() == node3.getId());
+  CHECK(node1.getSuccessorId() == node2.getId());
+
+  CHECK(node2.getPredecessorId() == node1.getId());
+  CHECK(node2.getSuccessorId() == node4.getId());
+
+  CHECK(node3.getPredecessorId() == node5.getId());
+  CHECK(node3.getSuccessorId() == node1.getId());
+
+  CHECK(node4.getPredecessorId() == node2.getId());
+  CHECK(node4.getSuccessorId() == node0.getId());
+
+  CHECK(node5.getPredecessorId() == node0.getId());
+  CHECK(node5.getSuccessorId() == node3.getId());
 }
 
 TEST_CASE("Chord messaging test")

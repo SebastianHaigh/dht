@@ -31,20 +31,10 @@ class MockConnectionManager : public ConnectionManager_I
     bool send(const NodeId& nodeId, const Message& message) override
     {
       m_logger->log(m_logPrefix + "sending message to " + nodeId.toString());
-      uint32_t ip{ 0 };
-      bool foundNode{ false };
 
-      for (const auto& idIpPair : m_nodeIdToIp)
-      {
-        if (idIpPair.first == nodeId)
-        {
-          ip = idIpPair.second;
-          foundNode = true;
-          break;
-        }
-      }
+      auto ip = resolveIp(nodeId);
 
-      if (not foundNode)
+      if (ip == 0)
       {
         m_logger->log(m_logPrefix + "could not find node " + nodeId.toString() + " failed to send message");
         return false;
@@ -56,6 +46,33 @@ class MockConnectionManager : public ConnectionManager_I
       m_simulatedNode.sendMessage(ip, encoded.m_message, encoded.m_length);
 
       return true;
+    }
+
+    bool sendEncoded(const NodeId& nodeId, EncodedMessage&& encoded) override
+    {
+      auto ip = resolveIp(nodeId);
+
+      if (ip == 0)
+      {
+        m_logger->log(m_logPrefix + "could not find node " + nodeId.toString() + " failed to send message");
+        return false;
+      }
+      m_logger->log(m_logPrefix + "found ip for " + nodeId.toString() + " sending message to " + std::to_string(ip));
+
+      m_simulatedNode.sendMessage(ip, encoded.m_message, encoded.m_length);
+    }
+
+    uint32_t resolveIp(const NodeId& nodeId)
+    {
+      for (const auto& idIpPair : m_nodeIdToIp)
+      {
+        if (idIpPair.first == nodeId)
+        {
+          return idIpPair.second;
+        }
+      }
+
+      return 0;
     }
 
     bool broadcast(const Message& message) override

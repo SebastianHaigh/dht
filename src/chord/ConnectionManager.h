@@ -14,6 +14,7 @@ class ConnectionManager_I
   public:
     virtual ~ConnectionManager_I() {}
     virtual bool send(const NodeId& nodeId, const Message& message) = 0;
+    virtual bool sendEncoded(const NodeId& nodeId, EncodedMessage&& encoded) = 0;
     virtual bool broadcast(const Message& message) = 0;
     virtual void registerReceiveHandler(tcp::OnReceiveCallback callback) = 0;
     virtual void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) = 0;
@@ -33,6 +34,8 @@ class ConnectionManager : public ConnectionManager_I
     ConnectionManager(const NodeId& nodeId, uint32_t ip, uint16_t port);
 
     bool send(const NodeId& nodeId, const Message& message) override;
+
+    bool sendEncoded(const NodeId& nodeId, EncodedMessage&& encoded) override {return false;}
 
     bool broadcast(const Message& message) override { return false; }
 

@@ -1,8 +1,14 @@
 #ifndef CHORD_NODE_H_
 #define CHORD_NODE_H_
 
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
 #include <future>
+#include <mutex>
 #include <optional>
+#include <queue>
+#include <unordered_map>
 
 #include "../comms/Comms.h"
 #include "../logger/Logger.h"
@@ -18,6 +24,184 @@ static constexpr uint8_t NULL_NODE_ID[20] = { 0 };
 
 using IpAddress = std::string;
 using ConnectionManagerFactory = std::function<std::unique_ptr<ConnectionManager_I>(const NodeId&, uint32_t, uint16_t)>;
+
+struct RPCHandler
+{
+  int m_id;
+  std::function<void()> m_rpc;
+};
+
+class FutureMessageSender
+{
+  public:
+    FutureMessageSender(ConnectionManager_I& connectionManager,
+                        const NodeId& nodeId,
+                        EncodedMessage&& message)
+      : m_c(connectionManager),
+        m_n(nodeId),
+        m_m(std::move(message)),
+        m_called(false)
+    {
+    }
+
+    FutureMessageSender(FutureMessageSender&& rhs) noexcept
+      : m_c(rhs.m_c),
+        m_n(rhs.m_n),
+        m_m(std::move(rhs.m_m)),
+        m_called(rhs.m_called)
+    {
+    }
+
+    FutureMessageSender& operator=(FutureMessageSender&& rhs) noexcept
+    {
+      m_c = rhs.m_c;
+      m_n = rhs.m_n;
+      m_m = std::move(rhs.m_m);
+      m_called = rhs.m_called;
+      return *this;
+    }
+
+    void send()
+    {
+      if (not m_called)
+      {
+        m_c.sendEncoded(m_n, std::move(m_m));
+        m_called = true;
+      }
+    }
+
+  private:
+    ConnectionManager_I& m_c;
+    NodeId m_n;
+    EncodedMessage m_m;
+    bool m_called;
+};
+
+class FutureHandler
+{
+  public:
+    explicit FutureHandler(std::function<bool()> onFuture)
+      : m_onFuture(std::move(onFuture))
+    {
+    }
+
+    FutureHandler(const FutureHandler&) = delete;
+    FutureHandler(FutureHandler&& rhs) noexcept
+      : m_onFuture(std::move(rhs.m_onFuture))
+    {
+    }
+
+    FutureHandler& operator=(const FutureHandler&) = delete;
+    FutureHandler& operator=(FutureHandler&& rhs) noexcept
+    {
+      m_onFuture = std::move(rhs.m_onFuture);
+      return *this;
+    }
+
+    bool doFuture()
+    {
+      return m_onFuture();
+    }
+
+  private:
+    std::function<bool()> m_onFuture;
+};
+
+class AsyncEngine
+{
+  public:
+    explicit AsyncEngine(ConnectionManager_I& connectionManager)
+      : m_connectionManager(connectionManager)
+    {
+    }
+
+    // here we need to post the rpc that we want to send.
+    // we need to provide a completion handler that tells the async engine what to do once it receives
+    // a response
+    void post(const NodeId& dest,
+              Message&& rpc, // TODO (haigh) should this be a universal ref? Move only semantics
+              std::function<void(Message&& response)> completionHandler,
+              uint32_t requestId)
+    {
+      // Add the handler to the map
+      m_completionHandlers.emplace(requestId, std::move(completionHandler));
+
+      // should the connection manager get the message or should we encode it first?
+      m_connectionManager.send(dest, rpc);
+    }
+
+    void postPendingEvent(const NodeId& dest,
+                          Message&& rpc,
+                          std::function<void(Message&& response)> completionHandler,
+                          std::function<bool()> eventHappened,
+                          uint32_t requestId)
+    {
+      m_completionHandlers.emplace(requestId, completionHandler);
+      m_events.emplace(requestId, eventHappened);
+
+      m_pendingMessages.emplace(requestId, 
+                                FutureMessageSender{m_connectionManager,
+                                                    dest,
+                                                    rpc.encode()});
+    }
+
+    void postPendingFuture(std::function<bool()> onFuture)
+    {
+      m_pendingFuture.emplace_back(std::move(onFuture));
+    }
+
+    void runOnePending()
+    {
+      for (const auto& event : m_events)
+      {
+        if (event.second())
+        {
+          // The event has happened, so now we can send its message
+          auto pending_it = m_pendingMessages.find(event.first);
+
+          if (pending_it == m_pendingMessages.end()) break; // TODO (haigh) does this need to be handled?
+
+          pending_it->second.send();
+          // TODO (haigh) both the event and the pending message should now be erased.
+          m_pendingMessages.erase(pending_it);
+        }
+      }
+
+      auto future_it = m_pendingFuture.begin();
+      while (future_it != m_pendingFuture.end())
+      {
+        if (future_it->doFuture())
+        {
+          future_it = m_pendingFuture.erase(future_it);
+          continue;
+        }
+        future_it++;
+      }
+
+    }
+
+    void handleReceived(Message&& rpc,
+                        uint32_t requestId)
+    {
+      auto handler_it = m_completionHandlers.find(requestId);
+
+      if (handler_it == m_completionHandlers.end()) return;
+
+      handler_it->second(std::move(rpc));
+
+      m_completionHandlers.erase(handler_it);
+    }
+
+  private:
+    ConnectionManager_I& m_connectionManager;
+
+    // When you register your rpc, you also register a completion handler,
+    // this is a task to be executed once the rpc result returns;
+    std::unordered_map<uint32_t, std::function<void(Message&&)>> m_completionHandlers;
+    std::unordered_map<uint32_t, std::function<bool()>> m_events;
+    std::unordered_map<uint32_t, FutureMessageSender> m_pendingMessages;
+    std::vector<FutureHandler> m_pendingFuture;
+};
 
 class WorkThreadQueue
 {
@@ -93,16 +277,16 @@ class ChordNode
     void log(const std::string& message);
 
     void doFindSuccessor(const FindSuccessorMessage& message);
-    void handleFindSuccessorResponse(const FindSuccessorResponseMessage& message);
+    void handleFindSuccessorResponse(FindSuccessorResponseMessage&& message);
 
     void handleReceivedMessage(EncodedMessage&& encoded);
 
     void handleJoinRequest(const JoinMessage& message);
-    void handleJoinResponse(const JoinResponseMessage& message);
+    void handleJoinResponse(JoinResponseMessage&& message);
 
     void handleNotify(const NotifyMessage& message);
     void handleGetNeighbours(const GetNeighboursMessage& message);
-    void handleGetNeighboursResponse(const GetNeighboursResponseMessage& message);
+    void handleGetNeighboursResponse(GetNeighboursResponseMessage&& message);
 
     void sendConnect(const NodeId& destination);
     void sendConnect(const NodeId& destination, const NodeId& nodeId, uint32_t ip);
@@ -111,14 +295,30 @@ class ChordNode
     void findIp(const NodeId& nodeId);
     void handleFindIp(const FindIpMessage& message);
 
+    void findIpAndSendMessage(const NodeId& dest,
+                              Message&& message,
+                              std::function<void(Message&&)> completionHandler,
+                              uint32_t requestId);
+
+    void sendMessage(const NodeId& dest,
+                     Message&& message,
+                     std::function<void(Message&&)> completionHandler,
+                     uint32_t requestId);
+
     void fixFingers();
 
     void stabilise();
 
     void workThread();
 
-    uint32_t findSuccessor(const NodeId& hash);
-    uint32_t findSuccessor(const NodeId& nodeToQuery, const NodeId& hash);
+    void findSuccessor(const NodeId& hash,
+                       std::function<void(const NodeId&)> onFound);
+    void findSuccessor(const NodeId& nodeToQuery,
+                       const NodeId& hash,
+                       std::function<void(const NodeId&)> onFound);
+    void sendFindSuccessorResponse(const NodeId& dest,
+                                   const NodeId& successorNodeId,
+                                   uint32_t requestId);
 
     struct Neighbours
     {
@@ -126,7 +326,9 @@ class ChordNode
       NodeId predecessor;
       bool hasPredecessor;
     };
-    uint32_t getNeighbours(const NodeId& nodeToQuery);
+    using GetNeighboursCallback = std::function<void(const Neighbours&)>;
+    void getNeighbours(const NodeId& nodeToQuery,
+                       GetNeighboursCallback onGot);
 
     void notify(const NodeId& nodeId);
 
@@ -176,6 +378,7 @@ class ChordNode
     std::thread m_workThread;
     bool m_running;
 
+    AsyncEngine m_async;
 };
 
 } // namespace chord

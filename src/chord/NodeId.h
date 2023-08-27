@@ -7,7 +7,7 @@
 #include <cmath>
 #include <bit>
 
-namespace chord {
+namespace odd::chord {
 
 static constexpr uint8_t powerOfTwoArray[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 

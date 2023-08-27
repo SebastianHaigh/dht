@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace odd {
+
 class TcpClientRecord
 {
   public:
@@ -41,6 +43,8 @@ class TcpClientManager
     std::condition_variable m_conditionVariable;
     std::unordered_map<int, std::unique_ptr<TcpClientRecord>> m_clients;
 };
+
+} // namespace odd
 
 #endif // TCP_CLIENT_MANAGER_H_
 

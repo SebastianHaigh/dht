@@ -33,6 +33,8 @@
 #include <cstdint>
 #define COMMS_VERSION 1
 
+namespace odd {
+
 enum class CommsVersion : uint16_t
 {
   V1 = 0x0001,
@@ -154,5 +156,7 @@ class PositionMessage : public Message
 
     uint32_t m_ip;
 };
+
+} // namespace odd
 
 #endif // COMMS_H_

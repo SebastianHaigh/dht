@@ -4,6 +4,8 @@
 #include <iostream>
 #include <unistd.h>
 
+namespace odd {
+
 TcpClientRecord::TcpClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength) 
   : m_fd(fd), 
     m_socketAddress(socketAddress),
@@ -93,3 +95,6 @@ std::vector<int> TcpClientManager::getAllClientFds()
 
   return result;
 }
+
+} // namespace odd
+

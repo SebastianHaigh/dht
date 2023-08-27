@@ -5,6 +5,8 @@
 #include <cstdint>
 #include <type_traits>
 
+namespace odd {
+
 EncodedMessage::EncodedMessage(std::size_t requiredLength)
   : m_message(new uint8_t[requiredLength]),
     m_length(requiredLength)
@@ -233,3 +235,6 @@ void PositionMessage::decode(EncodedMessage&& message)
 {
   return m_ip;
 }
+
+} // namespace odd
+

@@ -7,6 +7,8 @@
 #include <iostream>
 #include <type_traits>
 
+namespace odd {
+
 constexpr void swapEndian8(uint8_t* value)
 {
 }
@@ -92,5 +94,6 @@ void decodeSingleValue(uint8_t* toDecode, T* decoded)
   }
 }
 
+} // namespace odd
 
 #endif // COMMS_CODER_H_

@@ -6,6 +6,8 @@
 #include "../TcpServer.h"
 #include "../TcpClient.h"
 
+namespace odd {
+
 TEST_CASE("First test to check client/server behaviour")
 {
   // This test requires a TcpServer to connect to and a TcpClient to connect from.
@@ -32,4 +34,6 @@ TEST_CASE("First test to check client/server behaviour")
   }
   server.stop();
 }
+
+} // namespace odd
 

@@ -7,7 +7,7 @@
 #include <iostream>
 #include <sys/types.h>
 
-namespace hashing {
+namespace odd::hashing {
 
 static constexpr uint32_t H0 = 0x67452301;
 static constexpr uint32_t H1 = 0xEFCDAB89;
@@ -167,6 +167,6 @@ inline void sha1Round(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D, uint32
   A = temp;
 }
 
-} // namespace hashing
+} // namespace odd::hashing
 
 #endif // SHA1_H_

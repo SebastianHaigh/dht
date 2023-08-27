@@ -1,6 +1,6 @@
 #include "Logger.h"
 
-namespace logging {
+namespace odd::logging {
 
 Logger::Logger(WorkThreadQueue& workQueue,
                std::string name) :
@@ -48,4 +48,5 @@ void Log::threadFunction()
   }
 }
 
-} // namespace logging
+} // namespace odd::logging
+

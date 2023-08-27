@@ -5,7 +5,7 @@
 #include "NodeId.h"
 #include <cstdint>
 
-namespace chord {
+namespace odd::chord {
 
 class FindSuccessorMessage : public Message
 {
@@ -177,7 +177,7 @@ class FindIpMessage : public Message
     uint32_t m_timeToLive;
 };
 
-}
+} // namespace odd::chord
 
 #endif // CHORD_MESSAGING_H_
 

@@ -7,7 +7,7 @@
 #include <ostream>
 #include <thread>
 
-namespace logging {
+namespace odd::logging {
 
 struct LogStatement
 {
@@ -90,6 +90,6 @@ class Log
     bool m_running;
 };
 
-} // namespace logging
+} // namespace odd::logging
 
 #endif

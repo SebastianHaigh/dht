@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <arpa/inet.h>
 
-namespace chord {
+namespace odd::chord {
 
 ChordNode::ChordNode(const std::string& nodeName,
                      const std::string& ip,
@@ -23,7 +23,7 @@ ChordNode::ChordNode(const std::string& nodeName,
     m_logPrefix(nodeName + " - " + m_id.toString() + ": "),
     m_running(true)
 {
-  ::chord::initialiseFingerTable(m_fingerTable, m_id);
+  initialiseFingerTable(m_fingerTable, m_id);
 
   tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
   {
@@ -790,5 +790,5 @@ void ChordNode::log(const std::string& message)
   std::cout << "[" << m_nodeName << "-" << m_id.toString() << "] ChordNode: " << message << std::endl;
 }
 
-} // namespace chord
+} // namespace odd::chord
 

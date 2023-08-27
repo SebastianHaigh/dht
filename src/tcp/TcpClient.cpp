@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-namespace tcp {
+namespace odd::tcp {
 
 TcpClient::TcpClient(const IpAddressString& ipAddress, const PortNumber& port)
   : m_fd(-1),
@@ -143,5 +143,5 @@ void TcpClient::receiveThreadFunction()
   std::cout << "receive thread exiting" << std::endl;
 }
 
-} // namespace tcp
+} // namespace odd::tcp
 

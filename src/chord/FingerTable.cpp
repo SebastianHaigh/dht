@@ -1,6 +1,6 @@
 #include "FingerTable.h"
 
-namespace chord {
+namespace odd::chord {
 
 void initialiseFingerTable(FingerTable& fingerTable, const NodeId& nodeId)
 {

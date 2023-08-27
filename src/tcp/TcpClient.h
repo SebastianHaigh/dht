@@ -15,7 +15,7 @@
  * of these TcpClients. Each client connects the server in a single remote node.
  */
 
-namespace tcp {
+namespace odd::tcp {
 
 class TcpClient_I
 {
@@ -61,7 +61,7 @@ class TcpClient : public TcpClient_I
     std::atomic<bool> m_running;
 };
 
-} // namespace tcp
+} // namespace odd::tcp
 
 #endif // TCP_CLIENT_H_
 

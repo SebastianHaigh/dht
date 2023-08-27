@@ -8,6 +8,8 @@
 
 #include "TcpClientManager.h"
 
+namespace odd {
+
 class TcpClientAcceptor
 {
   public:
@@ -28,5 +30,7 @@ class TcpClientAcceptor
     TcpClientManager* m_clientManager;
     std::atomic<bool> m_running;
 };
- 
+
+} // namespace odd
+
 #endif // TCP_ACCEPTOR_H_

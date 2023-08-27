@@ -6,6 +6,8 @@
 #include <queue>
 #include <vector>
 
+namespace odd {
+
 template<typename T>
 class ThreadSafeQueue
 {
@@ -157,5 +159,7 @@ class ThreadPool
     void workerThread();
 
 };
+
+} // namespace odd
 
 #endif // THREAD_POOL_H_

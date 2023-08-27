@@ -1,7 +1,7 @@
 #include "ChordMessaging.h"
 #include "../comms/CommsCoder.h"
 
-namespace chord {
+namespace odd::chord {
 
 FindSuccessorMessage::FindSuccessorMessage(CommsVersion version,
                                            const NodeId& nodeId,
@@ -467,4 +467,5 @@ void FindIpMessage::decode(EncodedMessage&& message)
   return m_timeToLive;
 }
 
-}
+} // namespace odd::chord
+

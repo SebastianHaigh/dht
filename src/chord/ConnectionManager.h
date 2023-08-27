@@ -7,7 +7,7 @@
 
 #include "NodeId.h"
 
-namespace chord {
+namespace odd::chord {
 
 class ConnectionManager_I
 {
@@ -74,7 +74,7 @@ class ConnectionManager : public ConnectionManager_I
     const uint16_t m_localPort;
 };
 
-} // namespace chord
+} // namespace odd::chord
 
 #endif // CONNECTION_MANAGER_H_
 

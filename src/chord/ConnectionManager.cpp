@@ -1,6 +1,6 @@
 #include "ConnectionManager.h"
 
-namespace chord {
+namespace odd::chord {
 
 ConnectionManager::ConnectionManager(const NodeId& nodeId, uint32_t ip, uint16_t port)
   : m_server{ip, port},
@@ -93,4 +93,5 @@ std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
   return 0;
 }
 
-}
+} // namespace odd::chord
+ 

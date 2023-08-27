@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <iostream>
 
-namespace hashing {
+namespace odd::hashing {
 
 void sha1(const uint8_t *message, uint32_t messageLength, uint8_t *digest)
 {
@@ -165,4 +165,4 @@ void fromString(const char* hexDigest, uint8_t* digest)
   }
 }
 
-} // namespace hashing
+} // namespace odd::hashing

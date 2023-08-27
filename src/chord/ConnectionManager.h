@@ -1,8 +1,8 @@
 #ifndef CONNECTION_MANAGER_H_
 #define CONNECTION_MANAGER_H_
 
-#include "../tcp/TcpServer.h"
-#include "../tcp/TcpClient.h"
+#include <tcp/Server.h>
+#include <tcp/Client.h>
 #include "../comms/Comms.h"
 
 #include "NodeId.h"
@@ -15,7 +15,7 @@ class ConnectionManager_I
     virtual ~ConnectionManager_I() {}
     virtual bool send(const NodeId& nodeId, const Message& message) = 0;
     virtual bool broadcast(const Message& message) = 0;
-    virtual void registerReceiveHandler(tcp::OnReceiveCallback callback) = 0;
+    virtual void registerReceiveHandler(io::tcp::OnReceiveCallback callback) = 0;
     virtual void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) = 0;
     virtual void remove(const NodeId& id) = 0;
     virtual void stop() = 0;
@@ -36,7 +36,7 @@ class ConnectionManager : public ConnectionManager_I
 
     bool broadcast(const Message& message) override { return false; }
 
-    void registerReceiveHandler(tcp::OnReceiveCallback callback) override;
+    void registerReceiveHandler(io::tcp::OnReceiveCallback callback) override;
 
     void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override;
 
@@ -54,11 +54,11 @@ class ConnectionManager : public ConnectionManager_I
     {
       NodeConnection(const NodeId& id, uint32_t ipAddress, uint16_t port)
         : m_id(id),
-          m_tcpClient(std::make_unique<tcp::TcpClient>(ipAddress, port))
+          m_tcpClient(std::make_unique<io::tcp::Client>(ipAddress, port))
       {
       }
       NodeId m_id;
-      std::unique_ptr<tcp::TcpClient_I> m_tcpClient;
+      std::unique_ptr<io::tcp::Client_I> m_tcpClient;
     };
 
     std::vector<NodeConnection>::iterator getNodeConnection(const NodeId& nodeId);
@@ -66,7 +66,7 @@ class ConnectionManager : public ConnectionManager_I
 
     std::size_t getClientIndex(const NodeId& nodeId);
 
-    tcp::TcpServer m_server;
+    io::tcp::Server m_server;
     std::vector<NodeConnection> m_nodeConnections;
 
     NodeId m_localNodeId;

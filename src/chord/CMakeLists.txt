@@ -13,6 +13,8 @@ target_link_libraries(Chord
                       Comms
                       Logging)
 
+target_include_directories(Chord PRIVATE ${CMAKE_SOURCE_DIR}/src/io)
+
 enable_testing()
 
 add_subdirectory(tests)

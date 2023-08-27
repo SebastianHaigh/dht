@@ -24,7 +24,7 @@ bool ConnectionManager::send(const NodeId& nodeId, const Message& message)
   return true;
 }
 
-void ConnectionManager::registerReceiveHandler(tcp::OnReceiveCallback callback)
+void ConnectionManager::registerReceiveHandler(io::tcp::OnReceiveCallback callback)
 {
   m_server.subscribeToAll(std::move(callback));
 }

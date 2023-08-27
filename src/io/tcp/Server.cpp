@@ -1,64 +1,64 @@
-#include "TcpServer.h"
+#include "Server.h"
 #include <cstring>
 #include <iostream>
 
-namespace odd::tcp {
+namespace odd::io::tcp {
 
-TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
-  : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
+Server::Server(std::string ipAddress, uint16_t portNumber)
+  : m_acceptor{ipAddress, portNumber, &m_clientManager},
     m_running(false)
 {
 }
 
-TcpServer::TcpServer(uint32_t ipAddress, uint16_t portNumber)
-  : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
+Server::Server(uint32_t ipAddress, uint16_t portNumber)
+  : m_acceptor{ipAddress, portNumber, &m_clientManager},
     m_running(false)
 {
 }
 
-TcpServer::~TcpServer()
+Server::~Server()
 {
   stop();
 }
 
-void TcpServer::start()
+void Server::start()
 {
   try
   {
     m_running = true;
-    m_thread = std::thread(&TcpServer::threadFunction, this);
-    m_tcpClientAcceptor.start();
+    m_thread = std::thread(&Server::threadFunction, this);
+    m_acceptor.start();
   }
   catch (const std::exception& e)
   {
-    std::cout << "TcpServer could not be started: " << e.what() << std::endl;
+    std::cout << "Server could not be started: " << e.what() << std::endl;
   }
 }
 
-void TcpServer::stop()
+void Server::stop()
 {
   if (m_running)
   {
     m_running = false;
     m_thread.join();
-    m_tcpClientAcceptor.stop();
+    m_acceptor.stop();
   }
 }
 
-void TcpServer::subscribeToAll(OnReceiveCallback callback)
+void Server::subscribeToAll(OnReceiveCallback callback)
 {
   m_subscribers.push_back(callback);
 }
 
-void TcpServer::broadcast(const std::string& message)
+void Server::broadcast(const std::string& message)
 {
-  for (const auto& fd : m_tcpClientManager.getAllClientFds())
+  for (const auto& fd : m_clientManager.getAllClientFds())
   {
     unicast(message, fd);
   }
 }
 
-void TcpServer::multicast(const std::string& message, std::vector<int> fds)
+void Server::multicast(const std::string& message, std::vector<int> fds)
 {
   for (const auto& fd : fds)
   {
@@ -66,12 +66,12 @@ void TcpServer::multicast(const std::string& message, std::vector<int> fds)
   }
 }
 
-void TcpServer::unicast(const std::string& message, int fd)
+void Server::unicast(const std::string& message, int fd)
 {
   send(fd, message.c_str(), message.size() + 1, 0);
 }
 
-void TcpServer::threadFunction()
+void Server::threadFunction()
 {
   fd_set master;
 
@@ -79,7 +79,7 @@ void TcpServer::threadFunction()
   {
     FD_ZERO(&master);
 
-    auto allClientFds = m_tcpClientManager.getAllClientFds();
+    auto allClientFds = m_clientManager.getAllClientFds();
 
     for (const auto& fd : allClientFds)
     { 
@@ -107,7 +107,7 @@ void TcpServer::threadFunction()
 
         if (bytesIn <= 0)
         {
-          m_tcpClientManager.processClientDisconnecion(client);
+          m_clientManager.processClientDisconnecion(client);
         }
         else
         {
@@ -123,8 +123,7 @@ void TcpServer::threadFunction()
     }
   }
 
-
 }
 
-} // namespace odd::tcp
+} // namespace odd::io::tcp
 

@@ -1,13 +1,13 @@
-#include "TcpClientManager.h"
+#include "ClientManager.h"
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <iostream>
 #include <unistd.h>
 
-namespace odd {
+namespace odd::io::tcp {
 
-TcpClientRecord::TcpClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength) 
-  : m_fd(fd), 
+ClientRecord::ClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength)
+  : m_fd(fd),
     m_socketAddress(socketAddress),
     m_socketAddressLength(addressLength)
 {
@@ -16,27 +16,27 @@ TcpClientRecord::TcpClientRecord(int fd, sockaddr_in socketAddress, socklen_t ad
   m_name = std::string{address} + ":" + std::to_string(ntohs(m_socketAddress.sin_port));
 }
 
-const std::string TcpClientRecord::socketName()
+const std::string ClientRecord::socketName()
 {
   return m_name;
 }
 
-const std::string& TcpClientRecord::socketName() const
+const std::string& ClientRecord::socketName() const
 {
   return m_name;
 }
 
-void TcpClientManager::processNewClient(std::unique_ptr<TcpClientRecord> client) 
+void ClientManager::processNewClient(std::unique_ptr<ClientRecord> client)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 
   std::cout << "New client connected: " << client->socketName() << std::endl;
   m_clients.emplace(client->m_fd, std::move(client));
 
-  m_conditionVariable.notify_one(); 
+  m_conditionVariable.notify_one();
 }
 
-void TcpClientManager::processClientDisconnecion(int fd)
+void ClientManager::processClientDisconnecion(int fd)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -54,7 +54,7 @@ void TcpClientManager::processClientDisconnecion(int fd)
   m_conditionVariable.notify_one();
 }
 
-bool TcpClientManager::hasClient(int fd) 
+bool ClientManager::hasClient(int fd)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -68,7 +68,7 @@ bool TcpClientManager::hasClient(int fd)
   return false;
 }
 
-std::string TcpClientManager::getClientName(int fd)
+std::string ClientManager::getClientName(int fd)
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -82,7 +82,7 @@ std::string TcpClientManager::getClientName(int fd)
   return "Unknown client";
 }
 
-std::vector<int> TcpClientManager::getAllClientFds()
+std::vector<int> ClientManager::getAllClientFds()
 {
   std::lock_guard<std::mutex> lock(m_mutex);
 
@@ -96,5 +96,5 @@ std::vector<int> TcpClientManager::getAllClientFds()
   return result;
 }
 
-} // namespace odd
+} // namespace odd::io::tcp
 

@@ -1,19 +1,19 @@
-#ifndef TCP_SERVER_H_
-#define TCP_SERVER_H_
+#ifndef IO_TCP_SERVER_H_
+#define IO_TCP_SERVER_H_
 
-#include "TcpAcceptor.h"
-#include "TcpClientManager.h"
+#include "Acceptor.h"
+#include "ClientManager.h"
 #include <functional>
 #include <atomic>
 
-namespace odd::tcp {
+namespace odd::io::tcp {
 
 using OnReceiveCallback = std::function<void(uint8_t*, std::size_t)>;
 
-class TcpServer_I 
+class Server_I
 {
   public:
-    virtual ~TcpServer_I() = default;
+    virtual ~Server_I() = default;
     virtual void start() = 0;
     virtual void stop() = 0;
     virtual void subscribeToAll(OnReceiveCallback callback) = 0;
@@ -22,12 +22,12 @@ class TcpServer_I
     virtual void unicast(const std::string& message, int fd) = 0;
 };
 
-class TcpServer : public TcpServer_I
+class Server : public Server_I
 {
   public:
-    TcpServer(std::string ipAddress, uint16_t portNumber);
-    TcpServer(uint32_t ipAddress, uint16_t portNumber);
-    ~TcpServer() override;
+    Server(std::string ipAddress, uint16_t portNumber);
+    Server(uint32_t ipAddress, uint16_t portNumber);
+    ~Server() override;
 
     void start() override;
     void stop() override;
@@ -39,14 +39,14 @@ class TcpServer : public TcpServer_I
 
   private:
     void threadFunction();
-    TcpClientManager m_tcpClientManager;
-    TcpClientAcceptor m_tcpClientAcceptor;
+    ClientManager m_clientManager;
+    ClientAcceptor m_acceptor;
     std::vector<OnReceiveCallback> m_subscribers;
     std::thread m_thread;
     std::atomic<bool> m_running;
 };
 
-} // namespace odd::tcp
+} // namespace odd::io::tcp
 
-#endif // TCP_SERVER_H_
+#endif // IO_TCP_SERVER_H_
 

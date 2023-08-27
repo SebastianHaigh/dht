@@ -25,7 +25,7 @@ ChordNode::ChordNode(const std::string& nodeName,
 {
   initialiseFingerTable(m_fingerTable, m_id);
 
-  tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
+  io::tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
   {
     receive(message, messageLength);
   };

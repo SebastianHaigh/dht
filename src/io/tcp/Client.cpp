@@ -1,5 +1,5 @@
-#include "TcpClient.h"
-#include "TcpTypes.h"
+#include "Client.h"
+#include "Types.h"
 
 #include <cstdint>
 #include <iostream>
@@ -7,9 +7,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-namespace odd::tcp {
+namespace odd::io::tcp {
 
-TcpClient::TcpClient(const IpAddressString& ipAddress, const PortNumber& port)
+Client::Client(const IpAddressString& ipAddress, const PortNumber& port)
   : m_fd(-1),
     m_onReceiveCallback(nullptr),
     m_running(false)
@@ -23,7 +23,7 @@ TcpClient::TcpClient(const IpAddressString& ipAddress, const PortNumber& port)
   m_socketAddressLength = sizeof(m_socketAddress);
 }
 
-TcpClient::TcpClient(const IpAddressV4& ipAddress, const PortNumber& port)
+Client::Client(const IpAddressV4& ipAddress, const PortNumber& port)
   : m_fd(-1),
     m_onReceiveCallback(nullptr),
     m_running(false)
@@ -37,19 +37,19 @@ TcpClient::TcpClient(const IpAddressV4& ipAddress, const PortNumber& port)
   m_socketAddressLength = sizeof(m_socketAddress);
 }
 
-TcpClient::~TcpClient()
+Client::~Client()
 {
   stop();
 }
 
-void TcpClient::start()
+void Client::start()
 {
   m_running = true;
   connectToServer();
-  m_receiveThread = std::thread{&TcpClient::receiveThreadFunction, this};
+  m_receiveThread = std::thread{&Client::receiveThreadFunction, this};
 }
 
-void TcpClient::stop()
+void Client::stop()
 {
   if (m_running)
   {
@@ -59,7 +59,7 @@ void TcpClient::stop()
   }
 }
 
-void TcpClient::connectToServer()
+void Client::connectToServer()
 {
   m_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (m_fd < 0)
@@ -74,7 +74,7 @@ void TcpClient::connectToServer()
   }
 }
 
-void TcpClient::disconnect()
+void Client::disconnect()
 {
   if (m_fd >= 0)
   {
@@ -83,7 +83,7 @@ void TcpClient::disconnect()
   }
 }
 
-void TcpClient::send(const uint8_t* data, std::size_t size)
+void Client::send(const uint8_t* data, std::size_t size)
 {
   if (!m_running || m_fd < 0)
   {
@@ -96,12 +96,12 @@ void TcpClient::send(const uint8_t* data, std::size_t size)
   }
 }
 
-void TcpClient::setOnReceiveCallback(onReceiveCallback callback)
+void Client::setOnReceiveCallback(onReceiveCallback callback)
 {
   m_onReceiveCallback = callback;
 }
 
-void TcpClient::receiveThreadFunction()
+void Client::receiveThreadFunction()
 {
   fd_set toReadFdSet;
 
@@ -143,5 +143,5 @@ void TcpClient::receiveThreadFunction()
   std::cout << "receive thread exiting" << std::endl;
 }
 
-} // namespace odd::tcp
+} // namespace odd::io::tcp
 

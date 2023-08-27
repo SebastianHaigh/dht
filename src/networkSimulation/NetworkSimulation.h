@@ -1,9 +1,11 @@
 #ifndef NETWORKSIMULATOR_H_
 #define NETWORKSIMULATOR_H_
 
-#include "../tcp/TcpServer.h"
+#include <functional>
 #include <cstdint>
 #include <unordered_map>
+
+#include <tcp/Server.h>
 
 // SimulatedNode The purpose of this class is to simulate a single node in a network.
 // We can pass it messages and it will send them to other simulated nodes
@@ -82,7 +84,7 @@ class NetworkSimulator {
     std::unordered_map<uint32_t, int> m_nodeIdLookup;
 };
 
-class MockTcpServer : public tcp::TcpServer_I
+class MockTcpServer : public io::tcp::Server_I
 {
   public:
     MockTcpServer(std::string ipAddress);
@@ -91,7 +93,7 @@ class MockTcpServer : public tcp::TcpServer_I
     void start() override;
     void stop() override;
 
-    void subscribeToAll(tcp::OnReceiveCallback callback) override;
+    void subscribeToAll(io::tcp::OnReceiveCallback callback) override;
     void broadcast(const std::string& message) override;
     void multicast(const std::string& message, std::vector<int> fds) override;
     void unicast(const std::string& message, int fd) override;

@@ -72,7 +72,7 @@ class MockConnectionManager : public ConnectionManager_I
       return true;
     }
 
-    void registerReceiveHandler(tcp::OnReceiveCallback callback) override
+    void registerReceiveHandler(io::tcp::OnReceiveCallback callback) override
     {
       m_onReceive = callback;
 
@@ -132,7 +132,7 @@ class MockConnectionManager : public ConnectionManager_I
 
     std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
 
-    tcp::OnReceiveCallback m_onReceive;
+    io::tcp::OnReceiveCallback m_onReceive;
     std::unique_ptr<logging::Logger> m_logger;
     const std::string m_logPrefix;
 };

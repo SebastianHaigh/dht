@@ -1,5 +1,5 @@
-#ifndef TCP_CLIENT_H_
-#define TCP_CLIENT_H_
+#ifndef IO_TCP_CLIENT_H_
+#define IO_TCP_CLIENT_H_
 
 #include <cstdint>
 #include <functional>
@@ -8,21 +8,21 @@
 #include <thread>
 #include <atomic>
 
-#include "TcpTypes.h"
+#include "Types.h"
 
 /*
- * TcpClient allows a node to connect to other nodes. Each node has a TcpServer as well as mutliple
- * of these TcpClients. Each client connects the server in a single remote node.
+ * Client allows a node to connect to other nodes. Each node has a TcpServer as well as mutliple
+ * of these Clients. Each client connects the server in a single remote node.
  */
 
-namespace odd::tcp {
+namespace odd::io::tcp {
 
-class TcpClient_I
+class Client_I
 {
   public:
     using onReceiveCallback = std::function<void()>;
 
-    virtual ~TcpClient_I() = default;
+    virtual ~Client_I() = default;
 
     virtual void start() = 0;
     virtual void stop() = 0;
@@ -33,13 +33,13 @@ class TcpClient_I
     virtual void setOnReceiveCallback(onReceiveCallback callback) = 0;
 };
 
-class TcpClient : public TcpClient_I
+class Client : public Client_I
 {
   public:
-    TcpClient() = default;
-    TcpClient(const IpAddressString& ipAddress, const PortNumber& port);
-    TcpClient(const IpAddressV4& ipAddress, const PortNumber& port);
-    ~TcpClient();
+    Client() = default;
+    Client(const IpAddressString& ipAddress, const PortNumber& port);
+    Client(const IpAddressV4& ipAddress, const PortNumber& port);
+    ~Client();
 
     void start() override;
     void stop() override;
@@ -61,7 +61,7 @@ class TcpClient : public TcpClient_I
     std::atomic<bool> m_running;
 };
 
-} // namespace odd::tcp
+} // namespace odd::io::tcp
 
-#endif // TCP_CLIENT_H_
+#endif // IO_TCP_CLIENT_H_
 

@@ -1,5 +1,5 @@
-#ifndef TCP_CLIENT_MANAGER_H_
-#define  TCP_CLIENT_MANAGER_H_
+#ifndef IO_TCP_CLIENT_MANAGER_H_
+#define IO_TCP_CLIENT_MANAGER_H_
 
 #include <condition_variable>
 #include <netinet/in.h>
@@ -9,12 +9,12 @@
 #include <unordered_map>
 #include <vector>
 
-namespace odd {
+namespace odd::io::tcp {
 
-class TcpClientRecord
+class ClientRecord
 {
   public:
-    TcpClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength);
+    ClientRecord(int fd, sockaddr_in socketAddress, socklen_t addressLength);
 
     const std::string socketName();
     const std::string& socketName() const;
@@ -25,10 +25,10 @@ class TcpClientRecord
     std::string m_name;
 };
 
-class TcpClientManager
+class ClientManager
 {
   public:
-    void processNewClient(std::unique_ptr<TcpClientRecord> client);
+    void processNewClient(std::unique_ptr<ClientRecord> client);
 
     void processClientDisconnecion(int clientFD);
 
@@ -41,10 +41,10 @@ class TcpClientManager
   private:
     std::mutex m_mutex;
     std::condition_variable m_conditionVariable;
-    std::unordered_map<int, std::unique_ptr<TcpClientRecord>> m_clients;
+    std::unordered_map<int, std::unique_ptr<ClientRecord>> m_clients;
 };
 
-} // namespace odd
+} // namespace odd::io::tcp
 
-#endif // TCP_CLIENT_MANAGER_H_
+#endif // IO_TCP_CLIENT_MANAGER_H_
 

@@ -3,20 +3,20 @@
 #include <iostream>
 #include <vector>
 
-#include "../TcpServer.h"
-#include "../TcpClient.h"
+#include <tcp/Server.h>
+#include <tcp/Client.h>
 
-namespace odd {
+namespace odd::io::tcp {
 
 TEST_CASE("First test to check client/server behaviour")
 {
   // This test requires a TcpServer to connect to and a TcpClient to connect from.
-  tcp::TcpServer server{"127.0.0.1", 54000};
-  std::vector<std::unique_ptr<tcp::TcpClient>> clients;
+  Server server{"127.0.0.1", 54000};
+  std::vector<std::unique_ptr<Client>> clients;
 
   for (int i = 0; i < 10; ++i)
   {
-    clients.push_back(std::make_unique<tcp::TcpClient>("127.0.0.1", 54000));
+    clients.push_back(std::make_unique<Client>("127.0.0.1", 54000));
   }
 
   server.start();

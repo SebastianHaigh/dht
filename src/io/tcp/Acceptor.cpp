@@ -5,14 +5,14 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "TcpAcceptor.h"
-#include "TcpClientManager.h"
+#include "Acceptor.h"
+#include "ClientManager.h"
 
-namespace odd {
+namespace odd::io::tcp {
 
-TcpClientAcceptor::TcpClientAcceptor(std::string ipAddress,
-                                     uint16_t portNumber,
-                                     TcpClientManager* clientManager)
+ClientAcceptor::ClientAcceptor(std::string ipAddress,
+                               uint16_t portNumber,
+                               ClientManager* clientManager)
   : m_fd(socket(AF_INET, SOCK_STREAM, 0)),
     m_clientManager(clientManager),
     m_running(false)
@@ -22,9 +22,9 @@ TcpClientAcceptor::TcpClientAcceptor(std::string ipAddress,
   inet_pton(AF_INET, ipAddress.c_str(), &m_address.sin_addr);
 }
 
-TcpClientAcceptor::TcpClientAcceptor(uint32_t ipAddress,
-                                     uint16_t portNumber,
-                                     TcpClientManager* clientManager)
+ClientAcceptor::ClientAcceptor(uint32_t ipAddress,
+                               uint16_t portNumber,
+                               ClientManager* clientManager)
   : m_fd(socket(AF_INET, SOCK_STREAM, 0)),
     m_clientManager(clientManager),
     m_running(false)
@@ -34,12 +34,12 @@ TcpClientAcceptor::TcpClientAcceptor(uint32_t ipAddress,
   m_address.sin_addr.s_addr = htonl(ipAddress);
 }
 
-TcpClientAcceptor::~TcpClientAcceptor()
+ClientAcceptor::~ClientAcceptor()
 {
   stop();
 }
 
-void TcpClientAcceptor::start()
+void ClientAcceptor::start()
 {
   m_running = true;
 
@@ -48,10 +48,10 @@ void TcpClientAcceptor::start()
     return;
   }
 
-  m_clientAcceptorThread = std::thread{ &TcpClientAcceptor::clientAcceptorThreadFn, this };
+  m_clientAcceptorThread = std::thread{ &ClientAcceptor::clientAcceptorThreadFn, this };
 }
 
-bool TcpClientAcceptor::startListening()
+bool ClientAcceptor::startListening()
 {
   // TODO (haigh) What happens if this function fails?
   if (m_fd < 0)
@@ -85,7 +85,7 @@ bool TcpClientAcceptor::startListening()
   return true;
 }
 
-void TcpClientAcceptor::stop()
+void ClientAcceptor::stop()
 {
   if (m_running)
   {
@@ -94,7 +94,7 @@ void TcpClientAcceptor::stop()
   }
 }
 
-void TcpClientAcceptor::clientAcceptorThreadFn()
+void ClientAcceptor::clientAcceptorThreadFn()
 {
   fd_set listenSet;
 
@@ -108,7 +108,7 @@ void TcpClientAcceptor::clientAcceptorThreadFn()
     sockaddr_in client;
     socklen_t clientSize = sizeof(client);
 
-    timeval timeout; 
+    timeval timeout;
     timeout.tv_sec = 1;
 
     int socketCount = select(m_fd + 1, &listenSet, nullptr, nullptr, &timeout);
@@ -136,11 +136,11 @@ void TcpClientAcceptor::clientAcceptorThreadFn()
       }
     }
 
-    m_clientManager->processNewClient(std::make_unique<TcpClientRecord>(clientFD, client, clientSize));
+    m_clientManager->processNewClient(std::make_unique<ClientRecord>(clientFD, client, clientSize));
   }
 
-  std::cout << "TcpClientAcceptor thread exiting" << std::endl;
+  std::cout << "ClientAcceptor thread exiting" << std::endl;
 }
 
-} // namespace odd
+} // namespace odd::io::tcp
 

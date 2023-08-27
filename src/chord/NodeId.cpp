@@ -5,7 +5,7 @@
 #include <sstream>
 #include <bit>
 
-namespace chord {
+namespace odd::chord {
 
 NodeId::NodeId()
   : m_id{0}
@@ -380,5 +380,5 @@ bool containedInRightOpenInterval(const NodeId& begin, const NodeId& end, const 
   return containedInClosedInterval(begin, end, value);
 }
 
-} // namespace chord
+} // namespace odd::chord
 

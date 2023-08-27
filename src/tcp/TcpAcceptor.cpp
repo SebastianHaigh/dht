@@ -5,9 +5,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-
 #include "TcpAcceptor.h"
 #include "TcpClientManager.h"
+
+namespace odd {
 
 TcpClientAcceptor::TcpClientAcceptor(std::string ipAddress,
                                      uint16_t portNumber,
@@ -140,4 +141,6 @@ void TcpClientAcceptor::clientAcceptorThreadFn()
 
   std::cout << "TcpClientAcceptor thread exiting" << std::endl;
 }
+
+} // namespace odd
 

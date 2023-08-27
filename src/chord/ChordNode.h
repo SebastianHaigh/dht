@@ -12,7 +12,7 @@
 #include "FingerTable.h"
 #include "ConnectionManager.h"
 
-namespace chord {
+namespace odd::chord {
 
 static constexpr uint8_t NULL_NODE_ID[20] = { 0 };
 
@@ -178,7 +178,7 @@ class ChordNode
 
 };
 
-} // namespace chord
+} // namespace odd::chord
 
 #endif // CHORD_NODE_H_
 

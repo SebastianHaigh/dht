@@ -10,6 +10,8 @@
 // It also has a receive function that allows it toreceive messages that have been passed to it 
 // by other nodes
 
+namespace odd {
+
 using OnSendCallback = std::function<void(uint32_t, uint32_t, uint8_t*, size_t)>;
 using NodeReceiveHandler = std::function<void(uint32_t, uint8_t*, size_t)>;
 
@@ -95,6 +97,6 @@ class MockTcpServer : public tcp::TcpServer_I
     void unicast(const std::string& message, int fd) override;
 };
 
-
+} // namespace odd
 
 #endif // NETWORKSIMULATOR_H_

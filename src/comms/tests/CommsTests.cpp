@@ -1,6 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 #include "../Comms.h"
 
+namespace odd {
+
 TEST_CASE("Join Message can be encoded and decoded")
 {
   JoinMessage message{ CommsVersion::V1, 0x67000001, 0 };
@@ -39,4 +41,6 @@ TEST_CASE("Join Message can be encoded and decoded")
 
   CHECK(decoded.ip() == 0x67000001);
 }
+
+} // namespace odd
 

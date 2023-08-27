@@ -5,7 +5,7 @@
 
 #include "NodeId.h"
 
-namespace chord {
+namespace odd::chord {
 
 struct FingerTableEntry
 {

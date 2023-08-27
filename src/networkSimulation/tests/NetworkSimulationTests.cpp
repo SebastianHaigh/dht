@@ -4,6 +4,8 @@
 #include <memory>
 #include "../NetworkSimulation.h"
 
+namespace odd {
+
 TEST_CASE("Network simulation first test")
 {
   // Create a network
@@ -56,3 +58,6 @@ TEST_CASE("Network simulator verifies the IP addresses provided are valid")
 TEST_CASE("Network simulator does not allow two nodes with the same address to be added")
 {
 }
+
+} // namespace odd
+

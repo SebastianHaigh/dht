@@ -6,7 +6,7 @@
 
 #include "../sha1.h"
 
-namespace hashing { namespace test {
+namespace odd::hashing::test {
 
 TEST_CASE("String")
 {
@@ -107,4 +107,4 @@ TEST_CASE("Hash a sentence")
   }
 }
 
-}} // namespace hashing::test
+} // namespace odd::hashing::test

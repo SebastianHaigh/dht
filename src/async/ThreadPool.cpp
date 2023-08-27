@@ -1,5 +1,7 @@
 #include "ThreadPool.h"
 
+namespace odd {
+
 ThreadJoiner::ThreadJoiner(std::vector<std::thread>& threads) : m_threads(threads)
 {
 }
@@ -57,3 +59,6 @@ void ThreadPool::workerThread()
     std::this_thread::yield();
   }
 }
+
+} // namespace odd
+

@@ -2,7 +2,7 @@
 #include <cstring>
 #include <iostream>
 
-namespace tcp {
+namespace odd::tcp {
 
 TcpServer::TcpServer(std::string ipAddress, uint16_t portNumber)
   : m_tcpClientAcceptor{ipAddress, portNumber, &m_tcpClientManager},
@@ -126,5 +126,5 @@ void TcpServer::threadFunction()
 
 }
 
-} // namespace tcp
+} // namespace odd::tcp
 

@@ -10,7 +10,7 @@
 #include "../NodeId.h"
 #include "../../networkSimulation/NetworkSimulation.h"
 
-namespace chord { namespace test {
+namespace odd::chord::test {
 
 class MockConnectionManager : public ConnectionManager_I
 {
@@ -322,5 +322,5 @@ TEST_CASE("Chord messaging test")
   REQUIRE(decodedMessage.requestId() == 3987);
 }
 
-}} // namespace chord::test
+} // namespace odd::chord::test
 

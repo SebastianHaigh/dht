@@ -6,6 +6,8 @@
 #include <memory>
 #include <utility>
 
+namespace odd {
+
 NetworkSimulator::NetworkSimulator()
   : m_nextNodeId(0)
 {
@@ -221,4 +223,6 @@ bool SimulatedLink::hasNodeId(int nodeId) const
   return (m_node1->nodeId() == nodeId ||
           m_node2->nodeId() == nodeId);
 }
+
+} // namespace odd
 

@@ -4,7 +4,7 @@
 #include <memory>
 #include "../NetworkSimulation.h"
 
-namespace odd {
+namespace odd::io::simulation {
 
 TEST_CASE("Network simulation first test")
 {
@@ -59,5 +59,5 @@ TEST_CASE("Network simulator does not allow two nodes with the same address to b
 {
 }
 
-} // namespace odd
+} // namespace odd::io::simulation
 

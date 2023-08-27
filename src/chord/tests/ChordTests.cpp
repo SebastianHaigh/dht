@@ -15,7 +15,7 @@ namespace odd::chord::test {
 class MockConnectionManager : public ConnectionManager_I
 {
   public:
-    MockConnectionManager(const NodeId& nodeId, io::simulation::SimulatedNode& node, std::unique_ptr<logging::Logger> logger)
+    MockConnectionManager(const NodeId& nodeId, io::simulation::Node& node, std::unique_ptr<logging::Logger> logger)
       : m_nodeId(nodeId),
         m_simulatedNode(node),
         m_logger(std::move(logger)),
@@ -76,7 +76,7 @@ class MockConnectionManager : public ConnectionManager_I
     {
       m_onReceive = callback;
 
-      io::simulation::NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
+      io::simulation::Node::ReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
       {
         if (m_onReceive)
         {
@@ -128,7 +128,7 @@ class MockConnectionManager : public ConnectionManager_I
 
   private:
     NodeId m_nodeId;
-    io::simulation::SimulatedNode& m_simulatedNode;
+    io::simulation::Node& m_simulatedNode;
 
     std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
 

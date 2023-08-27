@@ -17,21 +17,21 @@ void NetworkSimulator::run()
 {
 }
 
-SimulatedNode& NetworkSimulator::addNode(const std::string& ipAddress)
+Node& NetworkSimulator::addNode(const std::string& ipAddress)
 {
   uint32_t ip_int{0};
   inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
   return addNode(ip_int);
 }
 
-SimulatedNode& NetworkSimulator::addNode(const std::string& ipAddress, NodeReceiveHandler receiveHandler)
+Node& NetworkSimulator::addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler)
 {
   uint32_t ip_int{0};
   inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
   return addNode(ip_int, std::move(receiveHandler));
 }
 
-SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress)
+Node& NetworkSimulator::addNode(uint32_t ipAddress)
 {
   m_nodeIds.push_back(m_nextNodeId++);
 
@@ -46,7 +46,7 @@ SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress)
                                       messageLength);
                         };
 
-  auto node = std::make_unique<SimulatedNode>(m_nodeIds.back(),
+  auto node = std::make_unique<Node>(m_nodeIds.back(),
                                               ipAddress,
                                               onSendCallback);
 
@@ -68,7 +68,7 @@ SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress)
 
 }
 
-SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHandler receiveHandler)
+Node& NetworkSimulator::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
 {
   m_nodeIds.push_back(m_nextNodeId++);
 
@@ -83,7 +83,7 @@ SimulatedNode& NetworkSimulator::addNode(uint32_t ipAddress, NodeReceiveHandler 
                                       messageLength);
                         };
 
-  auto node = std::make_unique<SimulatedNode>(m_nodeIds.back(),
+  auto node = std::make_unique<Node>(m_nodeIds.back(),
                                               ipAddress,
                                               onSendCallback,
                                               std::move(receiveHandler));
@@ -147,62 +147,8 @@ void NetworkSimulator::removeAllLinksForNode(int nodeId)
   }
 }
 
-SimulatedNode::SimulatedNode(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback)
-  : m_nodeId(nodeId),
-    m_ipAddress(ipAddress),
-    m_onSendCallback(std::move(onSendCallback))
-{
-}
 
-SimulatedNode::SimulatedNode(int nodeId,
-                             uint32_t ipAddress,
-                             OnSendCallback onSendCallback,
-                             NodeReceiveHandler receiveHandler)
-  : m_nodeId(nodeId),
-    m_ipAddress(ipAddress),
-    m_onSendCallback(std::move(onSendCallback)),
-    m_receiveHandler(std::move(receiveHandler))
-{
-}
-
-void SimulatedNode::run()
-{
-}
-
-void SimulatedNode::registerReceiveHandler(NodeReceiveHandler nodeReceiveHandler)
-{
-  m_receiveHandler = std::move(nodeReceiveHandler);
-}
-
-void SimulatedNode::cancelReceiveHandler()
-{
-  m_receiveHandler = nullptr;
-}
-
-void SimulatedNode::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
-{
-  if (m_receiveHandler)
-    m_receiveHandler(sourceIpAddress, message, messageLength);
-}
-
-void SimulatedNode::sendMessage(uint32_t destinationIpAddress,
-                                uint8_t* message,
-                                size_t messageLength) const
-{
-  m_onSendCallback(m_ipAddress, destinationIpAddress, message, messageLength);
-}
-
-[[nodiscard]] int SimulatedNode::nodeId() const
-{
-  return m_nodeId;
-}
-
-[[nodiscard]] uint32_t SimulatedNode::ip() const
-{
-  return m_ipAddress;
-}
-
-SimulatedLink::SimulatedLink(const SimulatedNode* node1, const SimulatedNode* node2)
+SimulatedLink::SimulatedLink(const Node* node1, const Node* node2)
   : m_node1(node1),
     m_node2(node2),
     m_up(false)

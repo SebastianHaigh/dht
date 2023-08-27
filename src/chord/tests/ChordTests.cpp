@@ -8,14 +8,14 @@
 #include "../ChordNode.h"
 #include "../ChordMessaging.h"
 #include "../NodeId.h"
-#include "../../networkSimulation/NetworkSimulation.h"
+#include <simulation/NetworkSimulation.h>
 
 namespace odd::chord::test {
 
 class MockConnectionManager : public ConnectionManager_I
 {
   public:
-    MockConnectionManager(const NodeId& nodeId, SimulatedNode& node, std::unique_ptr<logging::Logger> logger)
+    MockConnectionManager(const NodeId& nodeId, io::simulation::SimulatedNode& node, std::unique_ptr<logging::Logger> logger)
       : m_nodeId(nodeId),
         m_simulatedNode(node),
         m_logger(std::move(logger)),
@@ -76,7 +76,7 @@ class MockConnectionManager : public ConnectionManager_I
     {
       m_onReceive = callback;
 
-      NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
+      io::simulation::NodeReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
       {
         if (m_onReceive)
         {
@@ -128,7 +128,7 @@ class MockConnectionManager : public ConnectionManager_I
 
   private:
     NodeId m_nodeId;
-    SimulatedNode& m_simulatedNode;
+    io::simulation::SimulatedNode& m_simulatedNode;
 
     std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
 
@@ -223,7 +223,7 @@ TEST_CASE("Add some more node ids")
 
 TEST_CASE("Test the creation of a chord node")
 {
-  NetworkSimulator networkSimulator;
+  io::simulation::NetworkSimulator networkSimulator;
   logging::Log log;
 
   ConnectionManagerFactory factory = [&networkSimulator, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
@@ -246,7 +246,7 @@ TEST_CASE("Test the creation of a chord node")
 
 TEST_CASE("Create a chord ring with 6 nodes")
 {
-  NetworkSimulator networkSimulator;
+  io::simulation::NetworkSimulator networkSimulator;
   logging::Log log;
 
   ConnectionManagerFactory factory = [&networkSimulator, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)

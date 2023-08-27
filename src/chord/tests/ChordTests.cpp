@@ -8,7 +8,7 @@
 #include "../ChordNode.h"
 #include "../ChordMessaging.h"
 #include "../NodeId.h"
-#include <simulation/NetworkSimulation.h>
+#include <simulation/Network.h>
 
 namespace odd::chord::test {
 
@@ -223,12 +223,12 @@ TEST_CASE("Add some more node ids")
 
 TEST_CASE("Test the creation of a chord node")
 {
-  io::simulation::NetworkSimulator networkSimulator;
+  io::simulation::Network network;
   logging::Log log;
 
-  ConnectionManagerFactory factory = [&networkSimulator, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  ConnectionManagerFactory factory = [&network, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress), log.makeLogger("CONMAN"));
+    return std::make_unique<MockConnectionManager>(nodeId, network.addNode(ipAddress), log.makeLogger("CONMAN"));
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
@@ -246,12 +246,12 @@ TEST_CASE("Test the creation of a chord node")
 
 TEST_CASE("Create a chord ring with 6 nodes")
 {
-  io::simulation::NetworkSimulator networkSimulator;
+  io::simulation::Network network;
   logging::Log log;
 
-  ConnectionManagerFactory factory = [&networkSimulator, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  ConnectionManagerFactory factory = [&network, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, networkSimulator.addNode(ipAddress), log.makeLogger("CONMAN"));
+    return std::make_unique<MockConnectionManager>(nodeId, network.addNode(ipAddress), log.makeLogger("CONMAN"));
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};

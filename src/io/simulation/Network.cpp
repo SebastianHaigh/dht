@@ -1,4 +1,4 @@
-#include "NetworkSimulation.h"
+#include "Network.h"
 
 #include <arpa/inet.h>
 #include <cstdint>
@@ -8,30 +8,30 @@
 
 namespace odd::io::simulation {
 
-NetworkSimulator::NetworkSimulator()
+Network::Network()
   : m_nextNodeId(0)
 {
 }
 
-void NetworkSimulator::run()
+void Network::run()
 {
 }
 
-Node& NetworkSimulator::addNode(const std::string& ipAddress)
+Node& Network::addNode(const std::string& ipAddress)
 {
   uint32_t ip_int{0};
   inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
   return addNode(ip_int);
 }
 
-Node& NetworkSimulator::addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler)
+Node& Network::addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler)
 {
   uint32_t ip_int{0};
   inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
   return addNode(ip_int, std::move(receiveHandler));
 }
 
-Node& NetworkSimulator::addNode(uint32_t ipAddress)
+Node& Network::addNode(uint32_t ipAddress)
 {
   m_nodeIds.push_back(m_nextNodeId++);
 
@@ -56,19 +56,11 @@ Node& NetworkSimulator::addNode(uint32_t ipAddress)
 
   if (m_nodes.size() == 1) return *m_nodes.back();
 
-  for (const auto& node : m_nodes)
-  {
-    if (node->nodeId() != m_nodeIds.back())
-    {
-      m_links.emplace_back(node.get(), m_nodes.back().get());
-    }
-  }
-
   return *m_nodes.back();
 
 }
 
-Node& NetworkSimulator::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
+Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
 {
   m_nodeIds.push_back(m_nextNodeId++);
 
@@ -95,25 +87,10 @@ Node& NetworkSimulator::addNode(uint32_t ipAddress, Node::ReceiveHandler receive
 
   if (m_nodes.size() == 1) return *m_nodes.back();
 
-  // TODO (haigh) Is there any point in having links? I am not using them right now but it could be
-  //   good in the future if I want to test breaking a like between specific nodes, or simulating
-  //   different latency between different nodes (eg. due to greater geographical distance etc)
-
-  // TODO (haigh) Links can be held in an unordered map using a uint64_t as key. The ipAddress
-  // of each node can be shifted and OR'd together to form a link ID
-
-  for (const auto& node : m_nodes)
-  {
-    if (node->nodeId() != m_nodeIds.back())
-    {
-      m_links.emplace_back(node.get(), m_nodes.back().get());
-    }
-  }
-
   return *m_nodes.back();
 }
 
-void NetworkSimulator::sendMessage(uint32_t sourceIpAddress,
+void Network::sendMessage(uint32_t sourceIpAddress,
                                    uint32_t destinationIpAddress,
                                    uint8_t* message,
                                    size_t messageLength)
@@ -130,44 +107,6 @@ void NetworkSimulator::sendMessage(uint32_t sourceIpAddress,
       node->receiveMessage(sourceIpAddress, message, messageLength);
     }
   }
-}
-
-void NetworkSimulator::removeAllLinksForNode(int nodeId)
-{
-  auto it = m_links.begin();
-
-  while (it != m_links.end())
-  {
-    if (it->hasNodeId(nodeId))
-    {
-      it = m_links.erase(it);
-      continue;
-    }
-    it++;
-  }
-}
-
-
-SimulatedLink::SimulatedLink(const Node* node1, const Node* node2)
-  : m_node1(node1),
-    m_node2(node2),
-    m_up(false)
-{
-}
-
-void SimulatedLink::run()
-{
-}
-
-bool SimulatedLink::hasNodeId(int nodeId) const
-{
-  if (m_node1 == nullptr || m_node2 == nullptr)
-  {
-    return false;
-  }
-
-  return (m_node1->nodeId() == nodeId ||
-          m_node2->nodeId() == nodeId);
 }
 
 } // namespace odd::io::simulation

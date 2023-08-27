@@ -2,14 +2,15 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
-#include "../NetworkSimulation.h"
+
+#include <Network.h>
 
 namespace odd::io::simulation {
 
 TEST_CASE("Network simulation first test")
 {
   // Create a network
-  NetworkSimulator simulator;
+  Network simulator;
 
   // Values to be received
   int receivedAtNode0{0};

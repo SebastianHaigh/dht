@@ -10,12 +10,12 @@
 
 namespace odd::io::tcp {
 
-class ClientAcceptor
+class Acceptor
 {
   public:
-    ClientAcceptor(std::string ipAddress, uint16_t portNumber, ClientManager* clientManager);
-    ClientAcceptor(uint32_t ipAddress, uint16_t portNumber, ClientManager* clientManager);
-    ~ClientAcceptor();
+    Acceptor(std::string ipAddress, uint16_t portNumber, ClientManager* clientManager);
+    Acceptor(uint32_t ipAddress, uint16_t portNumber, ClientManager* clientManager);
+    ~Acceptor();
 
     void start();
     void stop();

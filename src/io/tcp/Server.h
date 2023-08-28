@@ -40,7 +40,7 @@ class Server : public Server_I
   private:
     void threadFunction();
     ClientManager m_clientManager;
-    ClientAcceptor m_acceptor;
+    Acceptor m_acceptor;
     std::vector<OnReceiveCallback> m_subscribers;
     std::thread m_thread;
     std::atomic<bool> m_running;

@@ -8,7 +8,7 @@ namespace odd::io::tcp {
 TEST_CASE("TcpAcceptor")
 {
   ClientManager manager;
-  ClientAcceptor acceptor{"127.0.0.1", 54000, &manager};
+  Acceptor acceptor{"127.0.0.1", 54000, &manager};
 }
 
 } // namespace odd::io::tcp

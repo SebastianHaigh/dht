@@ -10,7 +10,7 @@
 
 namespace odd::io::tcp {
 
-ClientAcceptor::ClientAcceptor(std::string ipAddress,
+Acceptor::Acceptor(std::string ipAddress,
                                uint16_t portNumber,
                                ClientManager* clientManager)
   : m_fd(socket(AF_INET, SOCK_STREAM, 0)),
@@ -22,7 +22,7 @@ ClientAcceptor::ClientAcceptor(std::string ipAddress,
   inet_pton(AF_INET, ipAddress.c_str(), &m_address.sin_addr);
 }
 
-ClientAcceptor::ClientAcceptor(uint32_t ipAddress,
+Acceptor::Acceptor(uint32_t ipAddress,
                                uint16_t portNumber,
                                ClientManager* clientManager)
   : m_fd(socket(AF_INET, SOCK_STREAM, 0)),
@@ -34,12 +34,12 @@ ClientAcceptor::ClientAcceptor(uint32_t ipAddress,
   m_address.sin_addr.s_addr = htonl(ipAddress);
 }
 
-ClientAcceptor::~ClientAcceptor()
+Acceptor::~Acceptor()
 {
   stop();
 }
 
-void ClientAcceptor::start()
+void Acceptor::start()
 {
   m_running = true;
 
@@ -48,10 +48,10 @@ void ClientAcceptor::start()
     return;
   }
 
-  m_clientAcceptorThread = std::thread{ &ClientAcceptor::clientAcceptorThreadFn, this };
+  m_clientAcceptorThread = std::thread{ &Acceptor::clientAcceptorThreadFn, this };
 }
 
-bool ClientAcceptor::startListening()
+bool Acceptor::startListening()
 {
   // TODO (haigh) What happens if this function fails?
   if (m_fd < 0)
@@ -85,7 +85,7 @@ bool ClientAcceptor::startListening()
   return true;
 }
 
-void ClientAcceptor::stop()
+void Acceptor::stop()
 {
   if (m_running)
   {
@@ -94,7 +94,7 @@ void ClientAcceptor::stop()
   }
 }
 
-void ClientAcceptor::clientAcceptorThreadFn()
+void Acceptor::clientAcceptorThreadFn()
 {
   fd_set listenSet;
 
@@ -139,7 +139,7 @@ void ClientAcceptor::clientAcceptorThreadFn()
     m_clientManager->processNewClient(std::make_unique<ClientRecord>(clientFD, client, clientSize));
   }
 
-  std::cout << "ClientAcceptor thread exiting" << std::endl;
+  std::cout << "Acceptor thread exiting" << std::endl;
 }
 
 } // namespace odd::io::tcp

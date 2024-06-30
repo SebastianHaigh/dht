@@ -8,6 +8,7 @@
 #include "../ChordNode.h"
 #include "../ChordMessaging.h"
 #include "../NodeId.h"
+#include "EncodedMessage.h"
 #include <simulation/Network.h>
 
 namespace odd::chord::test {
@@ -53,7 +54,7 @@ class MockConnectionManager : public ConnectionManager_I
 
       auto encoded = message.encode();
 
-      m_simulatedNode.sendMessage(ip, encoded.message(), encoded.length());
+      m_simulatedNode.sendMessage(ip, encoded);
 
       return true;
     }
@@ -65,7 +66,7 @@ class MockConnectionManager : public ConnectionManager_I
       {
         auto encoded = message.encode();
 
-        m_simulatedNode.sendMessage(idIpPair.second, encoded.message(), encoded.length());
+        m_simulatedNode.sendMessage(idIpPair.second, encoded);
         m_logger->log(m_logPrefix + "message sent to " + idIpPair.first.toString() + "(" + std::to_string(idIpPair.second) + ") as part of broadcast");
       }
 
@@ -76,15 +77,13 @@ class MockConnectionManager : public ConnectionManager_I
     {
       m_onReceive = callback;
 
-      io::simulation::Node::ReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
-      {
-        if (m_onReceive)
-        {
-          m_onReceive(message, messageLength);
-        }
-      };
-
-      m_simulatedNode.registerReceiveHandler(handler);
+      m_simulatedNode.registerReceiveHandler([this] (uint32_t sourceIp, const EncodedMessage& message)
+                                             {
+                                               if (m_onReceive)
+                                               {
+                                                 m_onReceive(message.message(), message.length());
+                                               }
+                                             });
     }
 
     void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override

@@ -10,7 +10,7 @@ class EncodedMessage
 {
 public:
   explicit EncodedMessage(std::size_t requiredLength);
-  EncodedMessage(uint8_t* message, std::size_t messageLength);
+  EncodedMessage(const uint8_t* message, std::size_t messageLength);
   ~EncodedMessage();
 
   EncodedMessage(const EncodedMessage&) = delete;
@@ -18,6 +18,8 @@ public:
 
   EncodedMessage(EncodedMessage&& rhs) noexcept;
   EncodedMessage& operator=(EncodedMessage&& rhs) noexcept;
+
+  EncodedMessage clone();
 
   uint8_t* message() { return m_message; }
   [[nodiscard]] const uint8_t* message() const { return m_message; }

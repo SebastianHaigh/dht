@@ -1,4 +1,5 @@
 #include "Node.h"
+#include "EncodedMessage.h"
 
 namespace odd::io::simulation {
 
@@ -34,17 +35,19 @@ void Node::cancelReceiveHandler()
   m_receiveHandler = nullptr;
 }
 
-void Node::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
+void Node::receiveMessage(uint32_t sourceIpAddress,
+                          const EncodedMessage& message)
 {
   if (m_receiveHandler)
-    m_receiveHandler(sourceIpAddress, message, messageLength);
+  {
+    m_receiveHandler(sourceIpAddress, message);
+  }
 }
 
 void Node::sendMessage(uint32_t destinationIpAddress,
-                                uint8_t* message,
-                                size_t messageLength) const
+                       EncodedMessage& message) const
 {
-  m_onSendCallback(m_ipAddress, destinationIpAddress, message, messageLength);
+  m_onSendCallback(m_ipAddress, destinationIpAddress, message);
 }
 
 [[nodiscard]] int Node::nodeId() const

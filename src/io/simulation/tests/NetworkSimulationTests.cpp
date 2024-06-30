@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include "EncodedMessage.h"
 
 #include <Network.h>
 
@@ -18,22 +19,24 @@ TEST_CASE("Network simulation first test")
   int receivedAtNode2{0};
   int receivedAtNode3{0};
 
-  auto receiveHandlerForNode0 = [&receivedAtNode0] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode0 = static_cast<int>(messageLength); };
-  auto receiveHandlerForNode1 = [&receivedAtNode1] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode1 = static_cast<int>(messageLength); };
-  auto receiveHandlerForNode2 = [&receivedAtNode2] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode2 = static_cast<int>(messageLength); };
-  auto receiveHandlerForNode3 = [&receivedAtNode3] (uint32_t sourceIp, uint8_t* message, size_t messageLength) { receivedAtNode3 = static_cast<int>(messageLength); };
-  
+  auto receiveHandlerForNode0 = [&receivedAtNode0] (uint32_t sourceIp, const EncodedMessage& message) { receivedAtNode0 = static_cast<int>(message.length()); };
+  auto receiveHandlerForNode1 = [&receivedAtNode1] (uint32_t sourceIp, const EncodedMessage& message) { receivedAtNode1 = static_cast<int>(message.length()); };
+  auto receiveHandlerForNode2 = [&receivedAtNode2] (uint32_t sourceIp, const EncodedMessage& message) { receivedAtNode2 = static_cast<int>(message.length()); };
+  auto receiveHandlerForNode3 = [&receivedAtNode3] (uint32_t sourceIp, const EncodedMessage& message) { receivedAtNode3 = static_cast<int>(message.length()); };
+
   // Add two nodes to the network
   auto& node0 = simulator.addNode(0, receiveHandlerForNode0);
   auto& node1 = simulator.addNode(1, receiveHandlerForNode1);
 
   // Send a message from node a and check it is received on node b
-  node0.sendMessage(1, nullptr, 1);
-  
+  EncodedMessage msg1{ nullptr, 1 };
+  node0.sendMessage(1, msg1);
+
   CHECK(receivedAtNode1 == 1);
 
   // Send a message from node b and check it is received on node a
-  node1.sendMessage(0, nullptr, 2);
+  EncodedMessage msg2{ nullptr, 2 };
+  node1.sendMessage(0, msg2);
 
   CHECK(receivedAtNode0 == 2);
 
@@ -42,7 +45,8 @@ TEST_CASE("Network simulation first test")
 
   for (int i = 0; i < 4; i++)
   {
-    node2.sendMessage(i, nullptr, i);
+    EncodedMessage msg{ nullptr, static_cast<size_t>(i) };
+    node2.sendMessage(i, msg);
   }
 
   CHECK(receivedAtNode0 == 0);

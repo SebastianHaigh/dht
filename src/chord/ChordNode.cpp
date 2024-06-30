@@ -25,12 +25,11 @@ ChordNode::ChordNode(const std::string& nodeName,
 {
   initialiseFingerTable(m_fingerTable, m_id);
 
-  io::tcp::OnReceiveCallback onReceiveCallback = [this] (uint8_t* message, std::size_t messageLength)
-  {
-    receive(message, messageLength);
-  };
 
-  m_connectionManager->registerReceiveHandler(onReceiveCallback);
+  m_connectionManager->registerReceiveHandler([this] (const uint8_t* message, std::size_t messageLength)
+                                              {
+                                                receive(message, messageLength);
+                                              });
 
   m_workThread = std::thread{&ChordNode::workThread, this};
 }
@@ -141,7 +140,7 @@ const NodeId &ChordNode::getSuccessorId() const
   return m_successor;
 }
 
-void ChordNode::receive(uint8_t* message, std::size_t messageLength)
+void ChordNode::receive(const uint8_t* message, std::size_t messageLength)
 {
   m_logger->log(m_logPrefix + "receiving message");
   EncodedMessage encoded{message, messageLength};

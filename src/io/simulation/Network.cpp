@@ -5,6 +5,7 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+#include "EncodedMessage.h"
 
 namespace odd::io::simulation {
 
@@ -37,18 +38,16 @@ Node& Network::addNode(uint32_t ipAddress)
 
   auto onSendCallback = [this] (uint32_t source,
                                 uint32_t dest,
-                                uint8_t* message,
-                                size_t messageLength)
+                                const EncodedMessage& message)
                         {
                           sendMessage(source,
                                       dest,
-                                      message,
-                                      messageLength);
+                                      message);
                         };
 
   auto node = std::make_unique<Node>(m_nodeIds.back(),
-                                              ipAddress,
-                                              onSendCallback);
+                                     ipAddress,
+                                     onSendCallback);
 
   m_nodes.push_back(std::move(node));
 
@@ -66,19 +65,17 @@ Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
 
   auto onSendCallback = [this] (uint32_t source,
                                 uint32_t dest,
-                                uint8_t* message,
-                                size_t messageLength)
+                                const EncodedMessage& message)
                         {
                           sendMessage(source,
                                       dest,
-                                      message,
-                                      messageLength);
+                                      message);
                         };
 
   auto node = std::make_unique<Node>(m_nodeIds.back(),
-                                              ipAddress,
-                                              onSendCallback,
-                                              std::move(receiveHandler));
+                                     ipAddress,
+                                     onSendCallback,
+                                     std::move(receiveHandler));
 
   m_nodes.push_back(std::move(node));
 
@@ -91,9 +88,8 @@ Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
 }
 
 void Network::sendMessage(uint32_t sourceIpAddress,
-                                   uint32_t destinationIpAddress,
-                                   uint8_t* message,
-                                   size_t messageLength)
+                          uint32_t destinationIpAddress,
+                          const EncodedMessage& message)
 {
   // Go through each of the nodes that we have and find the destination Ip Address
   auto nodeIp_p = m_nodeIdLookup.find(destinationIpAddress);
@@ -104,7 +100,7 @@ void Network::sendMessage(uint32_t sourceIpAddress,
   {
     if (node->nodeId() == nodeIp_p->second)
     {
-      node->receiveMessage(sourceIpAddress, message, messageLength);
+      node->receiveMessage(sourceIpAddress, message);
     }
   }
 }

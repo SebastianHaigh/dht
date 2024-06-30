@@ -1,6 +1,7 @@
 #ifndef IO_SIMULATION_NETWORK_H_
 #define IO_SIMULATION_NETWORK_H_
 
+#include <EncodedMessage.h>
 #include "Node.h"
 
 #include <functional>
@@ -22,8 +23,7 @@ class Network {
     Node& addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler);
     void sendMessage(uint32_t sourceIpAddress,
                      uint32_t destinationIpAddress,
-                     uint8_t* message,
-                     size_t messageLength);
+                     const EncodedMessage& message);
 
   private:
     std::vector<int> m_nodeIds; // sorted list of nodeIds (which are ints starting from 0)

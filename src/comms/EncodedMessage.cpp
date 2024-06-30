@@ -10,7 +10,7 @@ EncodedMessage::EncodedMessage(std::size_t requiredLength)
 {
 }
 
-EncodedMessage::EncodedMessage(uint8_t* message, std::size_t messageLength)
+EncodedMessage::EncodedMessage(const uint8_t* message, std::size_t messageLength)
   : m_message(new uint8_t[messageLength]),
     m_length(messageLength)
 {
@@ -36,6 +36,11 @@ EncodedMessage& EncodedMessage::operator=(EncodedMessage&& rhs) noexcept
   rhs.m_message = nullptr;
 
   return *this;
+}
+
+EncodedMessage EncodedMessage::clone()
+{
+  return { m_message, m_length };
 }
 
 } // namespace odd

@@ -24,7 +24,7 @@ FindSuccessorMessage::FindSuccessorMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_nodeIdForQuery, payload_p);
   payload_p += sizeof(NodeId);
@@ -41,7 +41,7 @@ void FindSuccessorMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_nodeIdForQuery);
   payload_p += sizeof(NodeId);
@@ -91,7 +91,7 @@ FindSuccessorResponseMessage::FindSuccessorResponseMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_nodeId, payload_p);
   payload_p += sizeof(NodeId);
@@ -111,7 +111,7 @@ void FindSuccessorResponseMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_nodeId);
   payload_p += sizeof(NodeId);
@@ -161,7 +161,7 @@ NotifyMessage::NotifyMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_nodeId, payload_p);
   payload_p += sizeof(NodeId);
@@ -173,7 +173,7 @@ void NotifyMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_nodeId);
   payload_p += sizeof(NodeId);
@@ -203,7 +203,7 @@ GetNeighboursMessage::GetNeighboursMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_sourceNodeId, payload_p);
   payload_p += sizeof(NodeId);
@@ -217,7 +217,7 @@ void GetNeighboursMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_sourceNodeId);
   payload_p += sizeof(NodeId);
@@ -273,7 +273,7 @@ GetNeighboursResponseMessage::GetNeighboursResponseMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_successor, payload_p);
   payload_p += sizeof(NodeId);
@@ -296,7 +296,7 @@ void GetNeighboursResponseMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_successor);
   payload_p += sizeof(NodeId);
@@ -357,7 +357,7 @@ ConnectMessage::ConnectMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_nodeId, payload_p);
   payload_p += sizeof(NodeId);
@@ -371,7 +371,7 @@ void ConnectMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_nodeId);
   payload_p += sizeof(NodeId);
@@ -413,7 +413,7 @@ FindIpMessage::FindIpMessage(CommsVersion version)
 {
   EncodedMessage encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[8];
+  auto* payload_p = &encoded.message()[8];
 
   encodeSingleValue(&m_nodeId, payload_p);
   payload_p += sizeof(NodeId);
@@ -433,7 +433,7 @@ void FindIpMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_nodeId);
   payload_p += sizeof(NodeId);

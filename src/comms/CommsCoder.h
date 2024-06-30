@@ -84,9 +84,9 @@ void encodeSingleValue(const T* toEncode, uint8_t* encoded)
 }
 
 template<typename T>
-void decodeSingleValue(uint8_t* toDecode, T* decoded)
+void decodeSingleValue(const uint8_t* toDecode, T* decoded)
 {
-  *decoded = *reinterpret_cast<T*>(toDecode);
+  *decoded = *reinterpret_cast<const T*>(toDecode);
 
   if constexpr (std::endian::native == std::endian::little)
   {

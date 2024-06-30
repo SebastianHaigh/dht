@@ -7,40 +7,6 @@
 
 namespace odd {
 
-EncodedMessage::EncodedMessage(std::size_t requiredLength)
-  : m_message(new uint8_t[requiredLength]),
-    m_length(requiredLength)
-{
-}
-
-EncodedMessage::EncodedMessage(uint8_t* message, std::size_t messageLength)
-  : m_message(new uint8_t[messageLength]),
-    m_length(messageLength)
-{
-  memcpy(m_message, message, m_length);
-}
-
-EncodedMessage::~EncodedMessage()
-{
-  delete[] m_message;
-}
-
-EncodedMessage::EncodedMessage(EncodedMessage&& rhs) noexcept
-  : m_message(rhs.m_message),
-    m_length(rhs.m_length)
-{
-  rhs.m_message = nullptr;
-}
-
-EncodedMessage& EncodedMessage::operator=(EncodedMessage&& rhs) noexcept
-{
-  m_message = rhs.m_message;
-  m_length = rhs.m_length;
-  rhs.m_message = nullptr;
-
-  return *this;
-}
-
 Message::Message(CommsVersion version, MessageType type, std::size_t payloadLength)
   : m_version(version),
     m_type(type),
@@ -69,7 +35,7 @@ EncodedMessage Message::createEncodedMessage() const
 
   EncodedMessage encoded{messageLength};
 
-  auto* msg_p = encoded.m_message;
+  auto* msg_p = encoded.message();
 
   encodeSingleValue((uint16_t*) &m_version, msg_p);
   encodeSingleValue((uint32_t*) &m_type, msg_p + sizeof(CommsVersion));
@@ -80,7 +46,7 @@ EncodedMessage Message::createEncodedMessage() const
 
 void Message::decodeHeaders(const EncodedMessage& encodedMessage)
 {
-  auto* msg_p = encodedMessage.m_message;
+  auto* msg_p = encodedMessage.message();
 
   decodeSingleValue(msg_p, (uint16_t*) &m_version);
   decodeSingleValue(msg_p + sizeof(CommsVersion), (uint32_t*) &m_type);
@@ -109,7 +75,7 @@ EncodedMessage JoinMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+  auto* payload_p = &encoded.message()[2 + 4 + 2];
 
   encodeSingleValue(&m_ip, payload_p);
   payload_p += sizeof(uint32_t);
@@ -123,7 +89,7 @@ void JoinMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_ip);
   payload_p += sizeof(uint32_t);
@@ -163,7 +129,7 @@ EncodedMessage JoinResponseMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+  auto* payload_p = &encoded.message()[2 + 4 + 2];
 
   encodeSingleValue(&m_ip, payload_p);
   payload_p += sizeof(uint32_t);
@@ -177,7 +143,7 @@ void JoinResponseMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_ip);
   payload_p += sizeof(uint32_t);
@@ -215,7 +181,7 @@ EncodedMessage PositionMessage::encode() const
 {
   auto encoded = createEncodedMessage();
 
-  auto* payload_p = &encoded.m_message[2 + 4 + 2];
+  auto* payload_p = &encoded.message()[2 + 4 + 2];
 
   encodeSingleValue(&m_ip, payload_p);
 
@@ -226,7 +192,7 @@ void PositionMessage::decode(EncodedMessage&& message)
 {
   decodeHeaders(message);
 
-  auto* payload_p = &message.m_message[8];
+  auto* payload_p = &message.message()[8];
 
   decodeSingleValue(payload_p, &m_ip);
 }

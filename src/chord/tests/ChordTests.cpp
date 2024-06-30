@@ -53,7 +53,7 @@ class MockConnectionManager : public ConnectionManager_I
 
       auto encoded = message.encode();
 
-      m_simulatedNode.sendMessage(ip, encoded.m_message, encoded.m_length);
+      m_simulatedNode.sendMessage(ip, encoded.message(), encoded.length());
 
       return true;
     }
@@ -65,7 +65,7 @@ class MockConnectionManager : public ConnectionManager_I
       {
         auto encoded = message.encode();
 
-        m_simulatedNode.sendMessage(idIpPair.second, encoded.m_message, encoded.m_length);
+        m_simulatedNode.sendMessage(idIpPair.second, encoded.message(), encoded.length());
         m_logger->log(m_logPrefix + "message sent to " + idIpPair.first.toString() + "(" + std::to_string(idIpPair.second) + ") as part of broadcast");
       }
 

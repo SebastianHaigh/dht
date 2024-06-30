@@ -9,7 +9,7 @@ TEST_CASE("Join Message can be encoded and decoded")
 
   EncodedMessage encoded = message.encode();
 
-  auto* msg_p = encoded.m_message;
+  auto* msg_p = encoded.message();
 
   // VERSION
   CHECK(*msg_p++ == 0x00);

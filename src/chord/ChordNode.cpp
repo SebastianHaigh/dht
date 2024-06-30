@@ -386,7 +386,8 @@ void ChordNode::handleReceivedMessage(EncodedMessage&& encoded)
 
   // get the message type, which is a uint32_t starting at encoded.message[2]
   uint32_t type;
-  decodeSingleValue(&encoded.m_message[2], &type);
+  // TODO (haigh) there should be a function for extracting message type from an encoded message
+  decodeSingleValue(&encoded.message()[2], &type);
 
   switch (static_cast<MessageType>(type))
   {
@@ -543,12 +544,13 @@ void ChordNode::handleReceivedMessage(EncodedMessage&& encoded)
     default:
     {
       m_logger->log(m_logPrefix + "received unknown message type: 0x");
-      for (int i = 0; i < encoded.m_length - 1; i++)
+      // TODO (haigh) hex dumping the message could also be a method
+      for (int i = 0; i < encoded.length() - 1; i++)
       {
-        std::cout << std::hex << (uint32_t) encoded.m_message[i] << ", ";
+        std::cout << std::hex << (uint32_t) encoded.message()[i] << ", ";
       }
 
-      std::cout << std::hex << encoded.m_message[encoded.m_length - 1] << std::endl;
+      std::cout << std::hex << encoded.message()[encoded.length() - 1] << std::endl;
       // This should probably be logged
     }
   }
@@ -739,7 +741,7 @@ void ChordNode::fixFingers()
     {
       return false;
     }
-    
+
     m_fingerTable.m_fingers[tableIndex].m_nodeId = it->second.get();
     m_logger->log(m_logPrefix + "got successor, finger " + std::to_string(tableIndex) + " nodeId set to " + m_fingerTable.m_fingers[tableIndex].m_nodeId.toString());
 

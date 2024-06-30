@@ -19,7 +19,7 @@ bool ConnectionManager::send(const NodeId& nodeId, const Message& message)
 
   auto encoded = message.encode();
 
-  nodeConnection->m_tcpClient->send(encoded.m_message, encoded.m_length);
+  nodeConnection->m_tcpClient->send(encoded.message(), encoded.length());
 
   return true;
 }
@@ -54,7 +54,7 @@ void ConnectionManager::remove(const NodeId& id)
   m_nodeConnections.erase(nodeConnection);
 }
 
-std::vector<ConnectionManager::NodeConnection>::iterator 
+std::vector<ConnectionManager::NodeConnection>::iterator
 ConnectionManager::getNodeConnection(const NodeId& nodeId)
 {
   return std::lower_bound(m_nodeConnections.begin(),
@@ -94,4 +94,4 @@ std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
 }
 
 } // namespace odd::chord
- 
+

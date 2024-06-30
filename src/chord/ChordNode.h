@@ -1,6 +1,7 @@
 #ifndef CHORD_NODE_H_
 #define CHORD_NODE_H_
 
+#include <boost/asio/ip/address.hpp>
 #include <future>
 #include <optional>
 
@@ -17,7 +18,10 @@ namespace odd::chord {
 static constexpr uint8_t NULL_NODE_ID[20] = { 0 };
 
 using IpAddress = std::string;
-using ConnectionManagerFactory = std::function<std::unique_ptr<ConnectionManager_I>(const NodeId&, uint32_t, uint16_t)>;
+
+using ConnectionManagerFactory = std::function<std::unique_ptr<ConnectionManager_I>(const NodeId&,
+                                                                                    const boost::asio::ip::address&,
+                                                                                    uint16_t)>;
 
 class WorkThreadQueue
 {
@@ -87,7 +91,8 @@ class ChordNode
     const NodeId& getSuccessorId() const;
 
     const NodeId& closestPrecedingFinger(const NodeId& id);
-    void receive(const uint8_t* message, std::size_t messageLength);
+    void receive(const uint8_t* message,
+                 std::size_t messageLength);
 
   private:
     void log(const std::string& message);
@@ -105,7 +110,9 @@ class ChordNode
     void handleGetNeighboursResponse(const GetNeighboursResponseMessage& message);
 
     void sendConnect(const NodeId& destination);
-    void sendConnect(const NodeId& destination, const NodeId& nodeId, uint32_t ip);
+    void sendConnect(const NodeId& destination,
+                     const NodeId& nodeId,
+                     const boost::asio::ip::address& ip);
     void handleConnectMessage(const ConnectMessage& message);
 
     void findIp(const NodeId& nodeId);
@@ -135,7 +142,7 @@ class ChordNode
     uint32_t getNextAvailableRequestId();
 
     const std::string m_nodeName;
-    const uint32_t m_ipAddress;
+    const boost::asio::ip::address m_ipAddress;
     NodeId m_id;
 
     bool m_hasPredecessor = false;

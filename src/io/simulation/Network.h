@@ -10,6 +10,7 @@
 #include <memory>
 #include <unordered_map>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 
 namespace odd::io::simulation {
 
@@ -21,13 +22,13 @@ class Network {
 
     boost::asio::io_context& getIoContext();
 
-    Node& addNode(uint32_t ipAddress);
-    Node& addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler);
+    Node& addNode(const boost::asio::ip::address& ipAddress);
+    Node& addNode(const boost::asio::ip::address& ipAddress, Node::ReceiveHandler receiveHandler);
     Node& addNode(const std::string& ipAddress);
     Node& addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler);
 
-    void sendMessage(uint32_t sourceIpAddress,
-                     uint32_t destinationIpAddress,
+    void sendMessage(const boost::asio::ip::address& sourceIpAddress,
+                     const boost::asio::ip::address& destinationIpAddress,
                      const EncodedMessage& message);
 
   private:
@@ -35,8 +36,8 @@ class Network {
 
     boost::asio::io_context m_context;
     int m_nextNodeId;
-    std::unordered_map<uint32_t, std::unique_ptr<Node>> m_nodes;
-    std::deque<std::pair<uint32_t, EncodedMessage>> m_receivedMessages;
+    std::unordered_map<boost::asio::ip::address, std::unique_ptr<Node>> m_nodes;
+    std::deque<std::pair<boost::asio::ip::address, EncodedMessage>> m_receivedMessages;
 };
 
 } // namespace odd::io::simulation

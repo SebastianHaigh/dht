@@ -3,6 +3,7 @@
 
 #include <tcp/Server.h>
 #include <tcp/Client.h>
+#include <boost/asio/ip/address.hpp>
 #include "../comms/Comms.h"
 
 #include "NodeId.h"
@@ -12,15 +13,26 @@ namespace odd::chord {
 class ConnectionManager_I
 {
   public:
-    virtual ~ConnectionManager_I() {}
-    virtual bool send(const NodeId& nodeId, const Message& message) = 0;
+    virtual ~ConnectionManager_I() = default;
+
+    virtual bool send(const NodeId& nodeId,
+                      const Message& message) = 0;
+
     virtual bool broadcast(const Message& message) = 0;
+
     virtual void registerReceiveHandler(io::tcp::OnReceiveCallback callback) = 0;
-    virtual void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) = 0;
+
+    virtual void insert(const NodeId& id,
+                        const boost::asio::ip::address& ipAddress,
+                        uint16_t port) = 0;
+
     virtual void remove(const NodeId& id) = 0;
+
     virtual void stop() = 0;
-    [[nodiscard]] virtual uint32_t ip() const = 0;
-    [[nodiscard]] virtual uint32_t ip(const NodeId& nodeId) const = 0;
+
+    [[nodiscard]] virtual const boost::asio::ip::address& ip() const = 0;
+
+    [[nodiscard]] virtual boost::asio::ip::address ip(const NodeId& nodeId) const = 0;
 };
 
 /*
@@ -30,7 +42,9 @@ class ConnectionManager_I
 class ConnectionManager : public ConnectionManager_I
 {
   public:
-    ConnectionManager(const NodeId& nodeId, uint32_t ip, uint16_t port);
+    ConnectionManager(const NodeId& nodeId,
+                      boost::asio::ip::address ip,
+                      uint16_t port);
 
     bool send(const NodeId& nodeId, const Message& message) override;
 
@@ -38,21 +52,23 @@ class ConnectionManager : public ConnectionManager_I
 
     void registerReceiveHandler(io::tcp::OnReceiveCallback callback) override;
 
-    void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override;
+    void insert(const NodeId& id,
+                const boost::asio::ip::address& ipAddress,
+                uint16_t port) override;
 
     void remove(const NodeId& id) override;
 
     void stop() override { };
 
-    [[nodiscard]] uint32_t ip() const override;
+    [[nodiscard]] const boost::asio::ip::address& ip() const override;
 
-    [[nodiscard]] uint32_t ip(const NodeId& nodeId) const override;
+    [[nodiscard]] boost::asio::ip::address ip(const NodeId& nodeId) const override;
 
   private:
 
     struct NodeConnection
     {
-      NodeConnection(const NodeId& id, uint32_t ipAddress, uint16_t port)
+      NodeConnection(const NodeId& id, const boost::asio::ip::address& ipAddress, uint16_t port)
         : m_id(id),
           m_tcpClient(std::make_unique<io::tcp::Client>(ipAddress, port))
       {
@@ -70,7 +86,7 @@ class ConnectionManager : public ConnectionManager_I
     std::vector<NodeConnection> m_nodeConnections;
 
     NodeId m_localNodeId;
-    const uint32_t m_localIpAddress;
+    const boost::asio::ip::address m_localIpAddress;
     const uint16_t m_localPort;
 };
 

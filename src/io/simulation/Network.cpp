@@ -1,10 +1,12 @@
 #include "Network.h"
 
 #include <arpa/inet.h>
+#include <boost/asio/ip/address.hpp>
 #include <cstdint>
+#include <iostream>
 #include <memory>
 #include <utility>
-#include "EncodedMessage.h"
+#include <EncodedMessage.h>
 
 namespace odd::io::simulation {
 
@@ -41,26 +43,22 @@ void Network::run()
     auto& [_, node] = *iter;
 
     // TODO (haigh) remove source node ID
-    node->receiveMessage(0, msg.clone());
+    node->receiveMessage({}, msg.clone());
     m_receivedMessages.pop_front();
   }
 }
 
 Node& Network::addNode(const std::string& ipAddress)
 {
-  uint32_t ip_int{0};
-  inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
-  return addNode(ip_int);
+  return addNode(boost::asio::ip::make_address(ipAddress));
 }
 
 Node& Network::addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler)
 {
-  uint32_t ip_int{0};
-  inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
-  return addNode(ip_int, std::move(receiveHandler));
+  return addNode(boost::asio::ip::make_address(ipAddress), std::move(receiveHandler));
 }
 
-Node& Network::addNode(uint32_t ipAddress)
+Node& Network::addNode(const boost::asio::ip::address& ipAddress)
 {
   auto nodeId = m_nextNodeId++;
 
@@ -73,7 +71,7 @@ Node& Network::addNode(uint32_t ipAddress)
   return *node->second;
 }
 
-Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
+Node& Network::addNode(const boost::asio::ip::address& ipAddress, Node::ReceiveHandler receiveHandler)
 {
   auto nodeId = m_nextNodeId++;
 
@@ -89,8 +87,8 @@ Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
 
 Node::OnSendCallback Network::createOnSendCallback()
 {
-  return [this] (uint32_t source,
-                 uint32_t dest,
+  return [this] (const boost::asio::ip::address& source,
+                 const boost::asio::ip::address& dest,
                  const EncodedMessage& message)
   {
     sendMessage(source,
@@ -99,8 +97,8 @@ Node::OnSendCallback Network::createOnSendCallback()
   };
 }
 
-void Network::sendMessage(uint32_t sourceIpAddress,
-                          uint32_t destinationIpAddress,
+void Network::sendMessage(const boost::asio::ip::address& sourceIpAddress,
+                          const boost::asio::ip::address& destinationIpAddress,
                           const EncodedMessage& message)
 {
   // Go through each of the nodes that we have and find the destination Ip Address

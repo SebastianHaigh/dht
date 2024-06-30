@@ -8,6 +8,8 @@
 #include <thread>
 #include <atomic>
 
+#include <boost/asio/ip/address.hpp>
+
 #include "Types.h"
 
 /*
@@ -38,7 +40,7 @@ class Client : public Client_I
   public:
     Client() = default;
     Client(const IpAddressString& ipAddress, const PortNumber& port);
-    Client(const IpAddressV4& ipAddress, const PortNumber& port);
+    Client(const boost::asio::ip::address& ipAddress, const PortNumber& port);
     ~Client();
 
     void start() override;

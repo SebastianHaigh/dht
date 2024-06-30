@@ -2,7 +2,7 @@
 #include "ChordMessaging.h"
 #include "../comms/CommsCoder.h"
 
-#include <algorithm>
+#include <boost/asio/ip/address.hpp>
 #include <arpa/inet.h>
 
 namespace odd::chord {
@@ -13,12 +13,12 @@ ChordNode::ChordNode(const std::string& nodeName,
                      const ConnectionManagerFactory& connectionManagerFactory,
                      std::unique_ptr<logging::Logger> logger)
   : m_nodeName(nodeName),
-    m_ipAddress{convertIpAddressToInteger(ip)},
-    m_id(m_ipAddress),
+    m_ipAddress(boost::asio::ip::make_address(ip)),
+    m_id(m_ipAddress.to_string()),
     m_predecessor{},
     m_successor{m_id},
     m_port{port},
-    m_connectionManager(connectionManagerFactory(NodeId{m_ipAddress}, m_ipAddress, port)),
+    m_connectionManager(connectionManagerFactory(m_id, m_ipAddress, port)),
     m_logger(std::move(logger)),
     m_logPrefix(nodeName + " - " + m_id.toString() + ": "),
     m_running(true)
@@ -65,7 +65,9 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
 
     auto ip = convertIpAddressToInteger(knownNodeIpAddress);
     NodeId knownNodeId{ ip };
-    m_connectionManager->insert(knownNodeId, ip, m_port);
+    m_connectionManager->insert(knownNodeId,
+                                boost::asio::ip::make_address(knownNodeIpAddress),
+                                m_port);
     m_successor = knownNodeId;
 
     auto requestId = getNextAvailableRequestId();
@@ -79,7 +81,7 @@ void ChordNode::join(const std::string &knownNodeIpAddress)
 
     m_joinFuture = m_joinPromise.get_future();
 
-    JoinMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip(), requestId };
+    JoinMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip().to_v4().to_uint(), requestId };
 
     m_logger->log(m_logPrefix + "JoinTask: sending JoinMessage");
 
@@ -172,7 +174,13 @@ void ChordNode::doFindSuccessor(const FindSuccessorMessage& message)
     m_logger->log(m_logPrefix + "successor found for " + message.queryNodeId().toString());
 
     // If this is the case then we can start returning
-    FindSuccessorResponseMessage response{ CommsVersion::V1, m_successor, m_id, m_connectionManager->ip(m_successor), message.requestId() };
+    FindSuccessorResponseMessage response{
+      CommsVersion::V1,
+      m_successor,
+      m_id,
+      m_connectionManager->ip(m_successor).to_v4().to_uint(),
+      message.requestId()
+    };
 
     m_logger->log(m_logPrefix + "sending FindSuccessorResponse");
 
@@ -255,7 +263,12 @@ void ChordNode::handleFindSuccessorResponse(const FindSuccessorResponseMessage& 
 
   if (message.nodeId() != m_id)
   {
-    m_connectionManager->insert(message.nodeId(), message.ip(), 0);
+    m_connectionManager->insert(message.nodeId(),
+                                boost::asio::ip::address{
+                                  boost::asio::ip::make_address_v4(message.ip())
+                                },
+                                0);
+
     sendConnect(message.nodeId());
   }
 
@@ -560,9 +573,17 @@ void ChordNode::handleJoinRequest(const JoinMessage& message)
   // This should probably do some checks, but I'm not sure yet what is needed.
   NodeId newNodeId{ message.ip() };
 
-  m_connectionManager->insert(newNodeId, message.ip(), 0);
+  m_connectionManager->insert(newNodeId,
+                              boost::asio::ip::address{
+                                boost::asio::ip::make_address_v4(message.ip())
+                              },
+                              0);
 
-  JoinResponseMessage joinMessage{ CommsVersion::V1, m_connectionManager->ip(), message.requestId() };
+  JoinResponseMessage joinMessage{
+    CommsVersion::V1,
+    m_connectionManager->ip().to_v4().to_uint(),
+    message.requestId()
+  };
 
   m_logger->log(m_logPrefix + "sending JoinResponse");
   m_connectionManager->send(newNodeId, joinMessage);
@@ -640,25 +661,31 @@ void ChordNode::sendConnect(const NodeId& destination)
   sendConnect(destination, m_id, m_connectionManager->ip());
 }
 
-void ChordNode::sendConnect(const NodeId& destination, const NodeId& nodeId, uint32_t ip)
+void ChordNode::sendConnect(const NodeId& destination,
+                            const NodeId& nodeId,
+                            const boost::asio::ip::address& ip)
 {
-  ConnectMessage message{ CommsVersion::V1, nodeId, ip };
+  ConnectMessage message{ CommsVersion::V1, nodeId, ip.to_v4().to_uint() };
 
-  m_logger->log(m_logPrefix + "sending connect message to " + destination.toString() + " sending node " + nodeId.toString() + ", ip " + std::to_string(ip));
+  m_logger->log(m_logPrefix + "sending connect message to " + destination.toString() + " sending node " + nodeId.toString() + ", ip " + ip.to_string());
 
   m_connectionManager->send(destination, message);
 }
 
 void ChordNode::handleConnectMessage(const ConnectMessage& message)
 {
-  m_connectionManager->insert(message.nodeId(), message.ip(), 0);
+  m_connectionManager->insert(message.nodeId(),
+                              boost::asio::ip::address{
+                                boost::asio::ip::make_address_v4(message.ip())
+                              },
+                              0);
 }
 
 void ChordNode::findIp(const NodeId& nodeId)
 {
-  FindIpMessage message{ CommsVersion::V1, nodeId, m_id, m_connectionManager->ip(), 5 };
+  FindIpMessage message{ CommsVersion::V1, nodeId, m_id, m_connectionManager->ip().to_v4().to_uint(), 5 };
 
-  m_logger->log(m_logPrefix + "sending find ip for node " + nodeId.toString() + " our ip is " + std::to_string(m_connectionManager->ip()));
+  m_logger->log(m_logPrefix + "sending find ip for node " + nodeId.toString() + " our ip is " + m_connectionManager->ip().to_string());
 
   m_connectionManager->broadcast(message);
 }
@@ -667,9 +694,9 @@ void ChordNode::handleFindIp(const FindIpMessage& message)
 {
   if (message.timeToLive() == 0) return;
 
-  uint32_t ip = m_connectionManager->ip(message.nodeId());
+  auto ip = m_connectionManager->ip(message.nodeId());
 
-  if (ip == 0)
+  if (ip.is_unspecified())
   {
     m_logger->log(m_logPrefix + "could not find ip address, broadcasting again, ttl " + std::to_string(message.timeToLive()));
     FindIpMessage messageToForward{ CommsVersion::V1,
@@ -686,7 +713,11 @@ void ChordNode::handleFindIp(const FindIpMessage& message)
   m_logger->log(m_logPrefix + "found ip address for " + message.nodeId().toString());
   m_logger->log(m_logPrefix + "inserting " + message.sourceNodeId().toString() + ", " + std::to_string(message.sourceNodeIp()));
 
-  m_connectionManager->insert(message.sourceNodeId(), message.sourceNodeIp(), 0);
+  m_connectionManager->insert(message.sourceNodeId(),
+                              boost::asio::ip::address{
+                                boost::asio::ip::make_address_v4(message.sourceNodeIp())
+                              },
+                              0);
 
   sendConnect(message.sourceNodeId(), message.nodeId(), ip);
 }

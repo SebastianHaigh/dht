@@ -16,6 +16,34 @@ Network::Network()
 
 void Network::run()
 {
+  if (m_receivedMessages.empty()) return;
+
+  // Send all of the messages that were in this queue when the method was called
+  auto toSend = m_receivedMessages.size();
+
+  for (int i = 0; i < toSend; ++i)
+  {
+    auto& [destinationIp, msg] = m_receivedMessages.front();
+
+    // TODO (haigh) simplify this handling by adding a map of ip to node
+    auto iter = m_nodeIdLookup.find(destinationIp);
+
+    if (iter == m_nodeIdLookup.end()) return;
+
+    auto& [_, destinationNodeId] = *iter;
+
+    for (const auto& node : m_nodes)
+    {
+      if (node->nodeId() == destinationNodeId)
+      {
+        // TODO (haigh) remove source node ID
+        node->receiveMessage(0, msg.clone());
+        break;
+      }
+    }
+
+    m_receivedMessages.pop_front();
+  }
 }
 
 Node& Network::addNode(const std::string& ipAddress)
@@ -92,15 +120,18 @@ void Network::sendMessage(uint32_t sourceIpAddress,
                           const EncodedMessage& message)
 {
   // Go through each of the nodes that we have and find the destination Ip Address
-  auto nodeIp_p = m_nodeIdLookup.find(destinationIpAddress);
+  auto iter = m_nodeIdLookup.find(destinationIpAddress);
 
-  if (nodeIp_p == m_nodeIdLookup.end()) return;
+  if (iter == m_nodeIdLookup.end()) return;
 
-  for (auto& node : m_nodes)
+  auto& [_, destinationNodeId] = *iter;
+
+  for (const auto& node : m_nodes)
   {
-    if (node->nodeId() == nodeIp_p->second)
+    if (node->nodeId() == destinationNodeId)
     {
-      node->receiveMessage(sourceIpAddress, message);
+      m_receivedMessages.emplace_back(destinationIpAddress, message.clone());
+      break;
     }
   }
 }

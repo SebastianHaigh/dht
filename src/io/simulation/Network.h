@@ -4,6 +4,7 @@
 #include <EncodedMessage.h>
 #include "Node.h"
 
+#include <deque>
 #include <functional>
 #include <cstdint>
 #include <string>
@@ -32,6 +33,8 @@ class Network {
 
     // TODO (haigh) use this node id lookup to store a mapping between ipAddresses and node ids
     std::unordered_map<uint32_t, int> m_nodeIdLookup;
+
+    std::deque<std::pair<uint32_t, EncodedMessage>> m_receivedMessages;
 };
 
 } // namespace odd::io::simulation

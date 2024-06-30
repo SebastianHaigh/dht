@@ -19,7 +19,7 @@ public:
   EncodedMessage(EncodedMessage&& rhs) noexcept;
   EncodedMessage& operator=(EncodedMessage&& rhs) noexcept;
 
-  EncodedMessage clone();
+  [[nodiscard]] EncodedMessage clone() const;
 
   uint8_t* message() { return m_message; }
   [[nodiscard]] const uint8_t* message() const { return m_message; }

@@ -38,7 +38,7 @@ EncodedMessage& EncodedMessage::operator=(EncodedMessage&& rhs) noexcept
   return *this;
 }
 
-EncodedMessage EncodedMessage::clone()
+EncodedMessage EncodedMessage::clone() const
 {
   return { m_message, m_length };
 }

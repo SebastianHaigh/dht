@@ -28,26 +28,32 @@ TEST_CASE("Network simulation first test")
   auto& node0 = simulator.addNode(0, receiveHandlerForNode0);
   auto& node1 = simulator.addNode(1, receiveHandlerForNode1);
 
+  uint8_t msgOctets[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
   // Send a message from node a and check it is received on node b
-  EncodedMessage msg1{ nullptr, 1 };
+  EncodedMessage msg1{ msgOctets, 1 };
   node0.sendMessage(1, msg1);
+
+  simulator.run();
 
   CHECK(receivedAtNode1 == 1);
 
   // Send a message from node b and check it is received on node a
-  EncodedMessage msg2{ nullptr, 2 };
+  EncodedMessage msg2{ msgOctets, 2 };
   node1.sendMessage(0, msg2);
+  simulator.run();
 
   CHECK(receivedAtNode0 == 2);
 
   auto& node2 = simulator.addNode(2, receiveHandlerForNode2);
   auto& node3 = simulator.addNode(3, receiveHandlerForNode3);
 
-  for (int i = 0; i < 4; i++)
+  for (size_t i = 0; i < 4; i++)
   {
-    EncodedMessage msg{ nullptr, static_cast<size_t>(i) };
+    EncodedMessage msg{ msgOctets, i };
     node2.sendMessage(i, msg);
   }
+  simulator.run();
 
   CHECK(receivedAtNode0 == 0);
   CHECK(receivedAtNode1 == 1);

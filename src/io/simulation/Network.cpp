@@ -24,24 +24,18 @@ void Network::run()
   for (int i = 0; i < toSend; ++i)
   {
     auto& [destinationIp, msg] = m_receivedMessages.front();
+    auto iter = m_nodes.find(destinationIp);
 
-    // TODO (haigh) simplify this handling by adding a map of ip to node
-    auto iter = m_nodeIdLookup.find(destinationIp);
-
-    if (iter == m_nodeIdLookup.end()) return;
-
-    auto& [_, destinationNodeId] = *iter;
-
-    for (const auto& node : m_nodes)
+    if (iter == m_nodes.end())
     {
-      if (node->nodeId() == destinationNodeId)
-      {
-        // TODO (haigh) remove source node ID
-        node->receiveMessage(0, msg.clone());
-        break;
-      }
+      m_receivedMessages.pop_front();
+      continue;
     }
 
+    auto& [_, node] = *iter;
+
+    // TODO (haigh) remove source node ID
+    node->receiveMessage(0, msg.clone());
     m_receivedMessages.pop_front();
   }
 }
@@ -62,57 +56,41 @@ Node& Network::addNode(const std::string& ipAddress, Node::ReceiveHandler receiv
 
 Node& Network::addNode(uint32_t ipAddress)
 {
-  m_nodeIds.push_back(m_nextNodeId++);
+  auto nodeId = m_nextNodeId++;
 
-  auto onSendCallback = [this] (uint32_t source,
-                                uint32_t dest,
-                                const EncodedMessage& message)
-                        {
-                          sendMessage(source,
-                                      dest,
-                                      message);
-                        };
+  auto node_p = std::make_unique<Node>(nodeId,
+                                       ipAddress,
+                                       createOnSendCallback());
 
-  auto node = std::make_unique<Node>(m_nodeIds.back(),
-                                     ipAddress,
-                                     onSendCallback);
+  auto [node, success] = m_nodes.emplace(ipAddress, std::move(node_p));
 
-  m_nodes.push_back(std::move(node));
-
-  m_nodeIdLookup.emplace(ipAddress, m_nodeIds.back());
-
-  if (m_nodes.size() == 1) return *m_nodes.back();
-
-  return *m_nodes.back();
-
+  return *node->second;
 }
 
 Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
 {
-  m_nodeIds.push_back(m_nextNodeId++);
+  auto nodeId = m_nextNodeId++;
 
-  auto onSendCallback = [this] (uint32_t source,
-                                uint32_t dest,
-                                const EncodedMessage& message)
-                        {
-                          sendMessage(source,
-                                      dest,
-                                      message);
-                        };
+  auto node_p = std::make_unique<Node>(nodeId,
+                                       ipAddress,
+                                       createOnSendCallback(),
+                                       std::move(receiveHandler));
 
-  auto node = std::make_unique<Node>(m_nodeIds.back(),
-                                     ipAddress,
-                                     onSendCallback,
-                                     std::move(receiveHandler));
+  auto [node, success] = m_nodes.emplace(ipAddress, std::move(node_p));
 
-  m_nodes.push_back(std::move(node));
+  return *node->second;
+}
 
-  // TODO (haigh) do I need some mechanism to remove these if a node leaves?
-  m_nodeIdLookup.emplace(ipAddress, m_nodeIds.back());
-
-  if (m_nodes.size() == 1) return *m_nodes.back();
-
-  return *m_nodes.back();
+Node::OnSendCallback Network::createOnSendCallback()
+{
+  return [this] (uint32_t source,
+                 uint32_t dest,
+                 const EncodedMessage& message)
+  {
+    sendMessage(source,
+                dest,
+                message);
+  };
 }
 
 void Network::sendMessage(uint32_t sourceIpAddress,
@@ -120,20 +98,11 @@ void Network::sendMessage(uint32_t sourceIpAddress,
                           const EncodedMessage& message)
 {
   // Go through each of the nodes that we have and find the destination Ip Address
-  auto iter = m_nodeIdLookup.find(destinationIpAddress);
+  auto iter = m_nodes.find(destinationIpAddress);
 
-  if (iter == m_nodeIdLookup.end()) return;
+  if (iter == m_nodes.end()) return;
 
-  auto& [_, destinationNodeId] = *iter;
-
-  for (const auto& node : m_nodes)
-  {
-    if (node->nodeId() == destinationNodeId)
-    {
-      m_receivedMessages.emplace_back(destinationIpAddress, message.clone());
-      break;
-    }
-  }
+  m_receivedMessages.emplace_back(destinationIpAddress, message.clone());
 }
 
 } // namespace odd::io::simulation

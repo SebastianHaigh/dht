@@ -2,7 +2,6 @@
 
 #include <arpa/inet.h>
 #include <cstdint>
-#include <iostream>
 #include <memory>
 #include <utility>
 #include "EncodedMessage.h"
@@ -14,8 +13,15 @@ Network::Network()
 {
 }
 
+boost::asio::io_context& Network::getIoContext()
+{
+  return m_context;
+}
+
 void Network::run()
 {
+  m_context.poll_one();
+
   if (m_receivedMessages.empty()) return;
 
   // Send all of the messages that were in this queue when the method was called

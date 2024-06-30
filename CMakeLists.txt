@@ -4,6 +4,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 20)
 
+find_package(Boost REQUIRED)
+
 Include(FetchContent)
 
 FetchContent_Declare(

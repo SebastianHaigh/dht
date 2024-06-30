@@ -9,6 +9,7 @@
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <boost/asio/io_context.hpp>
 
 namespace odd::io::simulation {
 
@@ -17,6 +18,8 @@ class Network {
     Network();
 
     void run();
+
+    boost::asio::io_context& getIoContext();
 
     Node& addNode(uint32_t ipAddress);
     Node& addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler);
@@ -30,6 +33,7 @@ class Network {
   private:
     Node::OnSendCallback createOnSendCallback();
 
+    boost::asio::io_context m_context;
     int m_nextNodeId;
     std::unordered_map<uint32_t, std::unique_ptr<Node>> m_nodes;
     std::deque<std::pair<uint32_t, EncodedMessage>> m_receivedMessages;

@@ -4,43 +4,19 @@
 
 namespace odd {
 
-EncodedMessage::EncodedMessage(std::size_t requiredLength)
-  : m_message(new uint8_t[requiredLength]),
-    m_length(requiredLength)
+EncodedMessage::EncodedMessage(std::size_t length)
+  : m_message(length)
 {
 }
 
-EncodedMessage::EncodedMessage(const uint8_t* message, std::size_t messageLength)
-  : m_message(new uint8_t[messageLength]),
-    m_length(messageLength)
+EncodedMessage::EncodedMessage(const uint8_t* message, std::size_t length)
+  : m_message(message, message + length)
 {
-  std::memcpy(m_message, message, m_length);
-}
-
-EncodedMessage::~EncodedMessage()
-{
-  delete[] m_message;
-}
-
-EncodedMessage::EncodedMessage(EncodedMessage&& rhs) noexcept
-  : m_message(rhs.m_message),
-    m_length(rhs.m_length)
-{
-  rhs.m_message = nullptr;
-}
-
-EncodedMessage& EncodedMessage::operator=(EncodedMessage&& rhs) noexcept
-{
-  m_message = rhs.m_message;
-  m_length = rhs.m_length;
-  rhs.m_message = nullptr;
-
-  return *this;
 }
 
 EncodedMessage EncodedMessage::clone() const
 {
-  return { m_message, m_length };
+  return *this;
 }
 
 } // namespace odd

@@ -70,11 +70,13 @@ class ConnectionManager : public ConnectionManager_I
     {
       NodeConnection(const NodeId& id, const boost::asio::ip::address& ipAddress, uint16_t port)
         : m_id(id),
-          m_tcpClient(std::make_unique<io::tcp::Client>(ipAddress, port))
+          m_tcpClient(std::make_unique<io::tcp::Client>(ipAddress, port)),
+          m_ip(ipAddress)
       {
       }
       NodeId m_id;
       std::unique_ptr<io::tcp::Client_I> m_tcpClient;
+      boost::asio::ip::address m_ip;
     };
 
     std::vector<NodeConnection>::iterator getNodeConnection(const NodeId& nodeId);

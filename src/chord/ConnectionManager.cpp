@@ -94,7 +94,7 @@ std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
 
   if (it == m_nodeConnections.end()) return {};
 
-  return {};
+  return it->m_ip;
 }
 
 } // namespace odd::chord

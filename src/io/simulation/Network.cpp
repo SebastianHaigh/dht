@@ -1,10 +1,12 @@
 #include "Network.h"
 
 #include <arpa/inet.h>
+#include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <EncodedMessage.h>
 
 namespace odd::io::simulation {
 
@@ -13,100 +15,98 @@ Network::Network()
 {
 }
 
+boost::asio::io_context& Network::getIoContext()
+{
+  return m_context;
+}
+
 void Network::run()
 {
+  m_context.poll_one();
+
+  if (m_receivedMessages.empty()) return;
+
+  // Send all of the messages that were in this queue when the method was called
+  auto toSend = m_receivedMessages.size();
+
+  for (int i = 0; i < toSend; ++i)
+  {
+    auto& [destinationIp, msg] = m_receivedMessages.front();
+    auto iter = m_nodes.find(destinationIp);
+
+    if (iter == m_nodes.end())
+    {
+      m_receivedMessages.pop_front();
+      continue;
+    }
+
+    auto& [_, node] = *iter;
+
+    // TODO (haigh) remove source node ID
+    node->receiveMessage({}, msg.clone());
+    m_receivedMessages.pop_front();
+  }
 }
 
 Node& Network::addNode(const std::string& ipAddress)
 {
-  uint32_t ip_int{0};
-  inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
-  return addNode(ip_int);
+  return addNode(boost::asio::ip::make_address(ipAddress));
 }
 
 Node& Network::addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler)
 {
-  uint32_t ip_int{0};
-  inet_pton(AF_INET, ipAddress.c_str(), &ip_int);
-  return addNode(ip_int, std::move(receiveHandler));
+  return addNode(boost::asio::ip::make_address(ipAddress), std::move(receiveHandler));
 }
 
-Node& Network::addNode(uint32_t ipAddress)
+Node& Network::addNode(const boost::asio::ip::address& ipAddress)
 {
-  m_nodeIds.push_back(m_nextNodeId++);
+  auto nodeId = m_nextNodeId++;
 
-  auto onSendCallback = [this] (uint32_t source,
-                                uint32_t dest,
-                                uint8_t* message,
-                                size_t messageLength)
-                        {
-                          sendMessage(source,
-                                      dest,
-                                      message,
-                                      messageLength);
-                        };
+  auto node_p = std::make_unique<Node>(nodeId,
+                                       ipAddress,
+                                       createOnSendCallback());
 
-  auto node = std::make_unique<Node>(m_nodeIds.back(),
-                                              ipAddress,
-                                              onSendCallback);
+  auto [node, success] = m_nodes.emplace(ipAddress, std::move(node_p));
 
-  m_nodes.push_back(std::move(node));
-
-  m_nodeIdLookup.emplace(ipAddress, m_nodeIds.back());
-
-  if (m_nodes.size() == 1) return *m_nodes.back();
-
-  return *m_nodes.back();
-
+  return *node->second;
 }
 
-Node& Network::addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler)
+Node& Network::addNode(const boost::asio::ip::address& ipAddress, Node::ReceiveHandler receiveHandler)
 {
-  m_nodeIds.push_back(m_nextNodeId++);
+  auto nodeId = m_nextNodeId++;
 
-  auto onSendCallback = [this] (uint32_t source,
-                                uint32_t dest,
-                                uint8_t* message,
-                                size_t messageLength)
-                        {
-                          sendMessage(source,
-                                      dest,
-                                      message,
-                                      messageLength);
-                        };
+  auto node_p = std::make_unique<Node>(nodeId,
+                                       ipAddress,
+                                       createOnSendCallback(),
+                                       std::move(receiveHandler));
 
-  auto node = std::make_unique<Node>(m_nodeIds.back(),
-                                              ipAddress,
-                                              onSendCallback,
-                                              std::move(receiveHandler));
+  auto [node, success] = m_nodes.emplace(ipAddress, std::move(node_p));
 
-  m_nodes.push_back(std::move(node));
-
-  // TODO (haigh) do I need some mechanism to remove these if a node leaves?
-  m_nodeIdLookup.emplace(ipAddress, m_nodeIds.back());
-
-  if (m_nodes.size() == 1) return *m_nodes.back();
-
-  return *m_nodes.back();
+  return *node->second;
 }
 
-void Network::sendMessage(uint32_t sourceIpAddress,
-                                   uint32_t destinationIpAddress,
-                                   uint8_t* message,
-                                   size_t messageLength)
+Node::OnSendCallback Network::createOnSendCallback()
+{
+  return [this] (const boost::asio::ip::address& source,
+                 const boost::asio::ip::address& dest,
+                 const EncodedMessage& message)
+  {
+    sendMessage(source,
+                dest,
+                message);
+  };
+}
+
+void Network::sendMessage(const boost::asio::ip::address& sourceIpAddress,
+                          const boost::asio::ip::address& destinationIpAddress,
+                          const EncodedMessage& message)
 {
   // Go through each of the nodes that we have and find the destination Ip Address
-  auto nodeIp_p = m_nodeIdLookup.find(destinationIpAddress);
+  auto iter = m_nodes.find(destinationIpAddress);
 
-  if (nodeIp_p == m_nodeIdLookup.end()) return;
+  if (iter == m_nodes.end()) return;
 
-  for (auto& node : m_nodes)
-  {
-    if (node->nodeId() == nodeIp_p->second)
-    {
-      node->receiveMessage(sourceIpAddress, message, messageLength);
-    }
-  }
+  m_receivedMessages.emplace_back(destinationIpAddress, message.clone());
 }
 
 } // namespace odd::io::simulation

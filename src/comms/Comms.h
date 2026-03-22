@@ -4,6 +4,8 @@
 #include <cassert>
 #include "../hashing/sha1.h"
 
+#include "EncodedMessage.h"
+
 // This file defines the way in which messages are passed between nodes
 //
 // We need to be able to send abitrary length messages, but we don't want the overhead to be too large
@@ -59,23 +61,6 @@ enum class MessageType : uint32_t
   CHORD_GET_NEIGHBOURS_RESPONSE  = 0x00000208,
 };
 
-class EncodedMessage
-{
-  public:
-    explicit EncodedMessage(std::size_t requiredLength);
-    EncodedMessage(uint8_t* message, std::size_t messageLength);
-    ~EncodedMessage();
-
-    EncodedMessage(const EncodedMessage&) = delete;
-    EncodedMessage& operator=(const EncodedMessage&) = delete;
-
-    EncodedMessage(EncodedMessage&& rhs) noexcept;
-    EncodedMessage& operator=(EncodedMessage&& rhs) noexcept;
-
-    uint8_t* m_message;
-    std::size_t m_length;
-};
-
 class Message
 {
   public:
@@ -88,7 +73,7 @@ class Message
 
     [[nodiscard]] virtual EncodedMessage encode() const = 0;
     virtual void decode(EncodedMessage&& message) = 0;
-  
+
   protected:
     [[nodiscard]] EncodedMessage createEncodedMessage() const;
 

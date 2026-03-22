@@ -1,3 +1,4 @@
+#include <boost/asio/ip/address.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstdint>
@@ -8,6 +9,7 @@
 #include "../ChordNode.h"
 #include "../ChordMessaging.h"
 #include "../NodeId.h"
+#include "EncodedMessage.h"
 #include <simulation/Network.h>
 
 namespace odd::chord::test {
@@ -15,7 +17,9 @@ namespace odd::chord::test {
 class MockConnectionManager : public ConnectionManager_I
 {
   public:
-    MockConnectionManager(const NodeId& nodeId, io::simulation::Node& node, std::unique_ptr<logging::Logger> logger)
+    MockConnectionManager(const NodeId& nodeId,
+                          io::simulation::Node& node,
+                          std::unique_ptr<logging::Logger> logger)
       : m_nodeId(nodeId),
         m_simulatedNode(node),
         m_logger(std::move(logger)),
@@ -23,7 +27,7 @@ class MockConnectionManager : public ConnectionManager_I
     {
     }
 
-    ~MockConnectionManager()
+    ~MockConnectionManager() override
     {
       stop();
     }
@@ -31,29 +35,29 @@ class MockConnectionManager : public ConnectionManager_I
     bool send(const NodeId& nodeId, const Message& message) override
     {
       m_logger->log(m_logPrefix + "sending message to " + nodeId.toString());
-      uint32_t ip{ 0 };
-      bool foundNode{ false };
+      boost::asio::ip::address ip{};
 
-      for (const auto& idIpPair : m_nodeIdToIp)
+      // TODO (haigh) a map would probably be better
+      for (const auto& [id, ipAddress] : m_nodeIdToIp)
       {
-        if (idIpPair.first == nodeId)
+        if (id == nodeId)
         {
-          ip = idIpPair.second;
-          foundNode = true;
+          ip = ipAddress;
           break;
         }
       }
 
-      if (not foundNode)
+      if (ip.is_unspecified())
       {
         m_logger->log(m_logPrefix + "could not find node " + nodeId.toString() + " failed to send message");
         return false;
       }
-      m_logger->log(m_logPrefix + "found ip for " + nodeId.toString() + " sending message to " + std::to_string(ip));
+
+      m_logger->log(m_logPrefix + "found ip for " + nodeId.toString() + " sending message to " + ip.to_string());
 
       auto encoded = message.encode();
 
-      m_simulatedNode.sendMessage(ip, encoded.m_message, encoded.m_length);
+      m_simulatedNode.sendMessage(ip, encoded);
 
       return true;
     }
@@ -61,12 +65,12 @@ class MockConnectionManager : public ConnectionManager_I
     bool broadcast(const Message& message) override
     {
       m_logger->log(m_logPrefix + "broadcasting message");
-      for (const auto& idIpPair : m_nodeIdToIp)
+      for (const auto& [id, ip] : m_nodeIdToIp)
       {
         auto encoded = message.encode();
 
-        m_simulatedNode.sendMessage(idIpPair.second, encoded.m_message, encoded.m_length);
-        m_logger->log(m_logPrefix + "message sent to " + idIpPair.first.toString() + "(" + std::to_string(idIpPair.second) + ") as part of broadcast");
+        m_simulatedNode.sendMessage(ip, encoded);
+        m_logger->log(m_logPrefix + "message sent to " + id.toString() + "(" + ip.to_string() + ") as part of broadcast");
       }
 
       return true;
@@ -76,23 +80,24 @@ class MockConnectionManager : public ConnectionManager_I
     {
       m_onReceive = callback;
 
-      io::simulation::Node::ReceiveHandler handler = [this] (uint32_t sourceIp, uint8_t* message, std::size_t messageLength)
-      {
-        if (m_onReceive)
-        {
-          m_onReceive(message, messageLength);
-        }
-      };
-
-      m_simulatedNode.registerReceiveHandler(handler);
+      m_simulatedNode.registerReceiveHandler([this] (const boost::asio::ip::address& sourceIp,
+                                                     const EncodedMessage& message)
+                                             {
+                                               if (m_onReceive)
+                                               {
+                                                 m_onReceive(message.message(), message.length());
+                                               }
+                                             });
     }
 
-    void insert(const NodeId& id, uint32_t ipAddress, uint16_t port) override
+    void insert(const NodeId& id,
+                const boost::asio::ip::address& ipAddress,
+                uint16_t port) override
     {
-      for (const auto& idIpPair : m_nodeIdToIp)
+      for (const auto& [nodeId, ip] : m_nodeIdToIp)
       {
         // There is already a connection to this node
-        if (idIpPair.first == id) return;
+        if (nodeId == id) return;
       }
 
       m_nodeIdToIp.emplace_back(id, ipAddress);
@@ -108,12 +113,12 @@ class MockConnectionManager : public ConnectionManager_I
       m_onReceive = nullptr;
     }
 
-    [[nodiscard]] uint32_t ip() const override
+    [[nodiscard]] const boost::asio::ip::address& ip() const override
     {
       return m_simulatedNode.ip();
     }
 
-    [[nodiscard]] uint32_t ip(const NodeId& nodeId) const override
+    [[nodiscard]] boost::asio::ip::address ip(const NodeId& nodeId) const override
     {
       for (const auto& idIpPair : m_nodeIdToIp)
       {
@@ -123,14 +128,14 @@ class MockConnectionManager : public ConnectionManager_I
         }
       }
 
-      return 0;
+      return {};
     }
 
   private:
     NodeId m_nodeId;
     io::simulation::Node& m_simulatedNode;
 
-    std::vector<std::pair<NodeId, uint32_t>> m_nodeIdToIp;
+    std::vector<std::pair<NodeId, boost::asio::ip::address>> m_nodeIdToIp;
 
     io::tcp::OnReceiveCallback m_onReceive;
     std::unique_ptr<logging::Logger> m_logger;
@@ -226,9 +231,13 @@ TEST_CASE("Test the creation of a chord node")
   io::simulation::Network network;
   logging::Log log;
 
-  ConnectionManagerFactory factory = [&network, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  auto factory = [&network, &log] (const NodeId& nodeId,
+                                   const boost::asio::ip::address& ipAddress,
+                                   uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, network.addNode(ipAddress), log.makeLogger("CONMAN"));
+    return std::make_unique<MockConnectionManager>(nodeId,
+                                                   network.addNode(ipAddress),
+                                                   log.makeLogger("CONMAN"));
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};
@@ -249,9 +258,13 @@ TEST_CASE("Create a chord ring with 6 nodes")
   io::simulation::Network network;
   logging::Log log;
 
-  ConnectionManagerFactory factory = [&network, &log] (const NodeId& nodeId, uint32_t ipAddress, uint16_t port)
+  auto factory = [&network, &log] (const NodeId& nodeId,
+                                   const boost::asio::ip::address& ipAddress,
+                                   uint16_t port)
   {
-    return std::make_unique<MockConnectionManager>(nodeId, network.addNode(ipAddress), log.makeLogger("CONMAN"));
+    return std::make_unique<MockConnectionManager>(nodeId,
+                                                   network.addNode(ipAddress),
+                                                   log.makeLogger("CONMAN"));
   };
 
   ChordNode node0{"node0", "200.178.0.1", 0, factory, log.makeLogger("CHORDNODE")};

@@ -8,7 +8,7 @@
 
 namespace odd::io::tcp {
 
-using OnReceiveCallback = std::function<void(uint8_t*, std::size_t)>;
+using OnReceiveCallback = std::function<void(const uint8_t*, std::size_t)>;
 
 class Server_I
 {

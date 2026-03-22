@@ -2,9 +2,11 @@
 
 namespace odd::chord {
 
-ConnectionManager::ConnectionManager(const NodeId& nodeId, uint32_t ip, uint16_t port)
-  : m_server{ip, port},
-    m_localNodeId(nodeId),
+ConnectionManager::ConnectionManager(const NodeId& nodeId,
+                                     boost::asio::ip::address ip,
+                                     uint16_t port)
+  : m_server{ip.to_v4().to_uint(), port},
+    m_localNodeId(std::move(nodeId)),
     m_localIpAddress(ip),
     m_localPort(port)
   {
@@ -19,7 +21,7 @@ bool ConnectionManager::send(const NodeId& nodeId, const Message& message)
 
   auto encoded = message.encode();
 
-  nodeConnection->m_tcpClient->send(encoded.m_message, encoded.m_length);
+  nodeConnection->m_tcpClient->send(encoded.message(), encoded.length());
 
   return true;
 }
@@ -29,7 +31,9 @@ void ConnectionManager::registerReceiveHandler(io::tcp::OnReceiveCallback callba
   m_server.subscribeToAll(std::move(callback));
 }
 
-void ConnectionManager::insert(const NodeId& id, uint32_t ipAddress, uint16_t port)
+void ConnectionManager::insert(const NodeId& id,
+                               const boost::asio::ip::address& ipAddress,
+                               uint16_t port)
 {
   auto nodeConnection = getNodeConnection(id);
 
@@ -54,7 +58,7 @@ void ConnectionManager::remove(const NodeId& id)
   m_nodeConnections.erase(nodeConnection);
 }
 
-std::vector<ConnectionManager::NodeConnection>::iterator 
+std::vector<ConnectionManager::NodeConnection>::iterator
 ConnectionManager::getNodeConnection(const NodeId& nodeId)
 {
   return std::lower_bound(m_nodeConnections.begin(),
@@ -79,19 +83,19 @@ std::size_t ConnectionManager::getClientIndex(const NodeId& nodeId)
   return std::distance(m_nodeConnections.begin(), nodeConnection);
 }
 
-[[nodiscard]] uint32_t ConnectionManager::ip() const
+[[nodiscard]] const boost::asio::ip::address& ConnectionManager::ip() const
 {
   return m_localIpAddress;
 }
 
-[[nodiscard]] uint32_t ConnectionManager::ip(const NodeId& nodeId) const
+[[nodiscard]] boost::asio::ip::address ConnectionManager::ip(const NodeId& nodeId) const
 {
   auto it = getNodeConnection(nodeId);
 
-  if (it == m_nodeConnections.end()) return 0;
+  if (it == m_nodeConnections.end()) return {};
 
-  return 0;
+  return it->m_ip;
 }
 
 } // namespace odd::chord
- 
+

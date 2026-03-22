@@ -1,20 +1,26 @@
 #include "Node.h"
+#include <boost/asio/ip/address.hpp>
+#include <iostream>
+#include <utility>
+#include "EncodedMessage.h"
 
 namespace odd::io::simulation {
 
-Node::Node(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback)
+Node::Node(int nodeId,
+           boost::asio::ip::address ipAddress,
+           OnSendCallback onSendCallback)
   : m_nodeId(nodeId),
-    m_ipAddress(ipAddress),
+    m_ipAddress(std::move(ipAddress)),
     m_onSendCallback(std::move(onSendCallback))
 {
 }
 
 Node::Node(int nodeId,
-           uint32_t ipAddress,
+           boost::asio::ip::address ipAddress,
            OnSendCallback onSendCallback,
            ReceiveHandler receiveHandler)
   : m_nodeId(nodeId),
-    m_ipAddress(ipAddress),
+    m_ipAddress(std::move(ipAddress)),
     m_onSendCallback(std::move(onSendCallback)),
     m_receiveHandler(std::move(receiveHandler))
 {
@@ -34,17 +40,19 @@ void Node::cancelReceiveHandler()
   m_receiveHandler = nullptr;
 }
 
-void Node::receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength)
+void Node::receiveMessage(const boost::asio::ip::address& sourceIpAddress,
+                          const EncodedMessage& message)
 {
   if (m_receiveHandler)
-    m_receiveHandler(sourceIpAddress, message, messageLength);
+  {
+    m_receiveHandler(sourceIpAddress, message);
+  }
 }
 
-void Node::sendMessage(uint32_t destinationIpAddress,
-                                uint8_t* message,
-                                size_t messageLength) const
+void Node::sendMessage(const boost::asio::ip::address& destinationIpAddress,
+                       EncodedMessage& message) const
 {
-  m_onSendCallback(m_ipAddress, destinationIpAddress, message, messageLength);
+  m_onSendCallback(m_ipAddress, destinationIpAddress, message);
 }
 
 [[nodiscard]] int Node::nodeId() const
@@ -52,7 +60,7 @@ void Node::sendMessage(uint32_t destinationIpAddress,
   return m_nodeId;
 }
 
-[[nodiscard]] uint32_t Node::ip() const
+[[nodiscard]] const boost::asio::ip::address& Node::ip() const
 {
   return m_ipAddress;
 }

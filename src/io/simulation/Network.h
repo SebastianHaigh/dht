@@ -1,37 +1,43 @@
 #ifndef IO_SIMULATION_NETWORK_H_
 #define IO_SIMULATION_NETWORK_H_
 
+#include <EncodedMessage.h>
 #include "Node.h"
 
-#include <functional>
+#include <deque>
 #include <cstdint>
 #include <string>
 #include <memory>
 #include <unordered_map>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 
 namespace odd::io::simulation {
 
 class Network {
   public:
     Network();
-    virtual ~Network() = default;
-    void run(); // TODO (haigh) is this method even needed?
-    Node& addNode(uint32_t ipAddress);
-    Node& addNode(uint32_t ipAddress, Node::ReceiveHandler receiveHandler);
+
+    void run();
+
+    boost::asio::io_context& getIoContext();
+
+    Node& addNode(const boost::asio::ip::address& ipAddress);
+    Node& addNode(const boost::asio::ip::address& ipAddress, Node::ReceiveHandler receiveHandler);
     Node& addNode(const std::string& ipAddress);
     Node& addNode(const std::string& ipAddress, Node::ReceiveHandler receiveHandler);
-    void sendMessage(uint32_t sourceIpAddress,
-                     uint32_t destinationIpAddress,
-                     uint8_t* message,
-                     size_t messageLength);
+
+    void sendMessage(const boost::asio::ip::address& sourceIpAddress,
+                     const boost::asio::ip::address& destinationIpAddress,
+                     const EncodedMessage& message);
 
   private:
-    std::vector<int> m_nodeIds; // sorted list of nodeIds (which are ints starting from 0)
-    std::vector<std::unique_ptr<Node>> m_nodes;
-    int m_nextNodeId;
+    Node::OnSendCallback createOnSendCallback();
 
-    // TODO (haigh) use this node id lookup to store a mapping between ipAddresses and node ids
-    std::unordered_map<uint32_t, int> m_nodeIdLookup;
+    boost::asio::io_context m_context;
+    int m_nextNodeId;
+    std::unordered_map<boost::asio::ip::address, std::unique_ptr<Node>> m_nodes;
+    std::deque<std::pair<boost::asio::ip::address, EncodedMessage>> m_receivedMessages;
 };
 
 } // namespace odd::io::simulation

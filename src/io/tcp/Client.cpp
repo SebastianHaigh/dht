@@ -1,6 +1,7 @@
 #include "Client.h"
 #include "Types.h"
 
+#include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <iostream>
 
@@ -23,18 +24,18 @@ Client::Client(const IpAddressString& ipAddress, const PortNumber& port)
   m_socketAddressLength = sizeof(m_socketAddress);
 }
 
-Client::Client(const IpAddressV4& ipAddress, const PortNumber& port)
+Client::Client(const boost::asio::ip::address& ipAddress, const PortNumber& port)
   : m_fd(-1),
     m_onReceiveCallback(nullptr),
     m_running(false)
 {
   // TODO (haigh) add a logger to do this instead
   std::cout << "creating socket address" << std::endl;
-  m_socketAddress.sin_family = AF_INET;
-  m_socketAddress.sin_port = htons(port);
-  m_socketAddress.sin_addr.s_addr = htonl(ipAddress);
+  /* m_socketAddress.sin_family = AF_INET; */
+  /* m_socketAddress.sin_port = htons(port); */
+  /* m_socketAddress.sin_addr.s_addr = htonl(ipAddress); */
 
-  m_socketAddressLength = sizeof(m_socketAddress);
+  /* m_socketAddressLength = sizeof(m_socketAddress); */
 }
 
 Client::~Client()

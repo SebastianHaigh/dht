@@ -1,20 +1,27 @@
 #ifndef IO_SIMULATION_NODE_H_
 #define IO_SIMULATION_NODE_H_
 
+#include <boost/asio/ip/address.hpp>
 #include <cstdint>
 #include <functional>
+#include <EncodedMessage.h>
 
 namespace odd::io::simulation {
 
 class Node
 {
   public:
-    using OnSendCallback = std::function<void(uint32_t, uint32_t, uint8_t*, size_t)>;
-    using ReceiveHandler = std::function<void(uint32_t, uint8_t*, size_t)>;
-    Node(int nodeId, uint32_t ipAddress, OnSendCallback onSendCallback);
+    using OnSendCallback = std::function<void(const boost::asio::ip::address&,
+                                              const boost::asio::ip::address&,
+                                              const EncodedMessage&)>;
+    using ReceiveHandler = std::function<void(const boost::asio::ip::address&,
+                                              const EncodedMessage&)>;
+    Node(int nodeId,
+         boost::asio::ip::address ipAddress,
+         OnSendCallback onSendCallback);
 
     Node(int nodeId,
-         uint32_t ipAddress,
+         boost::asio::ip::address ipAddress,
          OnSendCallback onSendCallback,
          ReceiveHandler receiveHandler);
 
@@ -22,22 +29,20 @@ class Node
 
     void registerReceiveHandler(ReceiveHandler nodeReceiveHandler);
 
-
     void cancelReceiveHandler();
 
+    void receiveMessage(const boost::asio::ip::address& sourceIpAddress,
+                        const EncodedMessage& message);
 
-    void receiveMessage(uint32_t sourceIpAddress, uint8_t* message, size_t messageLength);
-
-    void sendMessage(uint32_t destinationIpAddress,
-                     uint8_t* message,
-                     size_t messageLength) const;
+    void sendMessage(const boost::asio::ip::address& destinationIpAddress,
+                     EncodedMessage& message) const;
 
     [[nodiscard]] int nodeId() const;
-    [[nodiscard]] uint32_t ip() const;
+    [[nodiscard]] const boost::asio::ip::address& ip() const;
 
   private:
     int m_nodeId;
-    uint32_t m_ipAddress;
+    const boost::asio::ip::address m_ipAddress;
     OnSendCallback m_onSendCallback;
     ReceiveHandler m_receiveHandler;
 };
